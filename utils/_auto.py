@@ -92,7 +92,3 @@ class Automation:
         self.config.RUNNING = False
         self.tm.stop_all_threads()
         self.sm.configure('run_button', label='START')
-
-class Sequence:
-    def __init__(self):
-        pass
