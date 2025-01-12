@@ -35,9 +35,9 @@ class Automation:
         self.wm.activate()
 
         # lobby indicator (hoverboard icon)
-        LOBBY_X = 118
-        LOBBY_Y = 257
-        LOBBY = (255, 144, 23)
+        LOBBY_X = 420
+        LOBBY_Y = 535
+        LOBBY = (210, 235, 35)
 
         # text (they overlap so we just focus a single point)
         TEXT_X = 396
@@ -45,10 +45,10 @@ class Automation:
         GREEN = (83, 255, 56)
         RED = (255, 24, 24)
 
-        # the minigame name
+        # the minigame name text (to get as close to start as possible)
         GAME = (253, 48, 145)
 
-        # clear (detect points, click home)
+        # gained points text (click home after it does)
         POINT_X = 404
         POINT_Y = 426
         POINT = (255, 255, 1)
@@ -71,7 +71,7 @@ class Automation:
                     while (self.config.RUNNING and self.color.check(LOBBY_X, LOBBY_Y, LOBBY)):
                         time.sleep(0.1)
 
-                    # stop moving right when done
+                    # stop moving when done
                     self.keyboard.release(RIGHT)
 
                 # scan for the pink text before the red light green light to get ahead
@@ -89,7 +89,7 @@ class Automation:
                     while (self.config.RUNNING and self.color.check(TEXT_X, TEXT_Y, GREEN, tolerance=60)):
 
                         # scan for points text
-                        if self.color.check(POINT_X, POINT_Y, POINT):
+                        if self.color.region_check([POINT_X-3, POINT_Y-3, POINT_X+3, POINT_Y+3], POINT):
                             self.sm.update('status_text', 'cleared')
                             self.keyboard.release(LEFT)
                             self.moverel(HOME_X, HOME_Y)
@@ -108,7 +108,7 @@ class Automation:
                     while (self.config.RUNNING and self.color.check(TEXT_X, TEXT_Y, RED, tolerance=30)):
 
                         # scan for points text
-                        if self.color.check(POINT_X, POINT_Y, POINT):
+                        if self.color.region_check((POINT_X-3, POINT_Y-3, POINT_X+3, POINT_Y+3), POINT):
                             self.sm.update('status_text', 'cleared')
                             self.moverel(HOME_X, HOME_Y)
                             self.mouse.click()
