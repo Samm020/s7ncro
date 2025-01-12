@@ -13,20 +13,21 @@ class Automation:
         self.color = ColorDetector(wm)
 
     def rel(self, x, y):
-        """set coordinates relative to the target window"""
+        """set coordinates relative to target window"""
         rect = self.wm.get_rect()
         if rect:
             screen_x = rect['left'] + x
             screen_y = rect['top'] + y
         return screen_x, screen_y
-    
+
     def moverel(self, x, y):
+        """move mouse cursor relative to target window"""
         screen_x, screen_y = self.rel(x,y)
         self.mouse.move(screen_x,screen_y)
 
     # RED LIGHT!.... GREEEEEEEN LIIIIIIIGGHHHTTT
     def red_light_green_light(self):
-        
+
         # slight delay
         for i in range(3, 0, -1):
             self.sm.update('status_text', f'{i}...')
@@ -89,11 +90,10 @@ class Automation:
 
                         # scan for points text
                         if self.color.check(POINT_X, POINT_Y, POINT):
-                            self.keyboard.release(LEFT)
                             self.sm.update('status_text', 'cleared')
+                            self.keyboard.release(LEFT)
                             self.moverel(HOME_X, HOME_Y)
                             self.mouse.click()
-                            print('finished during move')
                             time.sleep(5)
 
                         time.sleep(0.1)
@@ -103,17 +103,17 @@ class Automation:
                     self.sm.update('status_text', 'waiting')
                     time.sleep(0.2) # move a bit further for free
                     self.keyboard.release(LEFT)
+
                     # wait for green
                     while (self.config.RUNNING and self.color.check(TEXT_X, TEXT_Y, RED, tolerance=30)):
-                        
+
                         # scan for points text
                         if self.color.check(POINT_X, POINT_Y, POINT):
                             self.sm.update('status_text', 'cleared')
                             self.moverel(HOME_X, HOME_Y)
                             self.mouse.click()
-                            print('finished after move')
                             time.sleep(5)
-                        
+
                         time.sleep(0.1)
 
                 self.sm.update('status_text', 'idle')
@@ -133,7 +133,8 @@ class Automation:
         if not self.config.RUNNING:
             self.config.RUNNING = True
             if not self.wm.wait_target_win():
-                self.sm.update('failed', 'could not find target window')
+                self.sm.update('status_text', 'failed')
+                self.sm.update('status_text_hover', 'could not find target window')
                 self.config.RUNNING = False
                 return
             self.sm.configure('run_button', label='STOP')
