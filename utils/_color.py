@@ -1,7 +1,7 @@
 import time
 import win32gui
 import numpy as np
-from PIL import ImageGrab
+import mss
 
 class ColorDetector:
     def __init__(self, wm):
@@ -12,10 +12,9 @@ class ColorDetector:
         self._last_capture_time = 0
         self._last_capture = None
 
-    # the reason i used imagegrab to directly capture the screen was because
     # roblox had some safety feature that blocked indirectly capturing the window idek man
     def capture_window(self):
-        """capture window content as a numpy array for processing"""
+        """capture window content as a numpy array for processing."""
         current_time = time.time()
         if current_time - self._last_capture_time < self._capture_cooldown:
             return self._last_capture
@@ -25,21 +24,24 @@ class ColorDetector:
             return None
 
         try:
-            # get window dimensions
+            # get window dims
             rect = self.wm.get_rect()
             if not rect:
                 return None
 
             left = rect['left']
             top = rect['top']
-            right = rect['left'] + rect['width']
-            bottom = rect['top'] + rect['height']
+            right = left + rect['width']
+            bottom = top + rect['height']
 
-            # capture the region of the screen from window coords
-            img = ImageGrab.grab(bbox=(left, top, right, bottom))
+            # use new mss instance for each capture because it caused threading issues
+            with mss.mss() as cpt:
+                monitor = {'top': top, 'left': left, 'width': right - left, 'height': bottom - top}
+                capture = cpt.grab(monitor)
 
-            # convert image to numpy array
-            img_np = np.array(img, dtype=np.int16)
+            # convert the image to a numpy array, reorder BGRA to RGB
+            img_np = np.array(capture, dtype=np.int16)[:, :, :3]
+            img_np = img_np[:, :, ::-1]
 
             # store result
             self._last_capture = img_np
@@ -56,8 +58,7 @@ class ColorDetector:
         capture = self.capture_window()
         if capture is None or y >= capture.shape[0] or x >= capture.shape[1]:
             return None
-        color = capture[y, x]
-        return color
+        return capture[y, x]
 
     def check(self, x, y, target_color, tolerance=10) -> bool:
         """check if color at coords match target within tolerance"""
@@ -73,8 +74,19 @@ class ColorDetector:
         if capture is None:
             return None
 
-        # set region
-        x1, y1, x2, y2 = region
+        # coord with expand value
+        if len(region) == 3:
+            x, y, e = region
+            x1 = x - e
+            y1 = y - e
+            x2 = x + e
+            y2 = y + e
+
+         # full region
+        elif len(region) == 4:
+            x1, y1, x2, y2 = region
+        else:
+            raise ValueError('bad region format. must be (x1, y1, x2, y2) or (x, y, expand).')
         search_area = capture[y1:y2, x1:x2]
 
         # convert to int16
