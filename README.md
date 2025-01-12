@@ -13,3 +13,8 @@ python -m pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+## compiled with nuitka
+```bash
+nuitka --onefile --windows-console-mode=disable --windows-icon-from-ico=res/s7ns.ico main.py
+```
