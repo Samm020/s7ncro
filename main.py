@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     # setup gui and start
     create_gui(automation)
-    dpg.create_viewport(title='SQUID', min_width=270, min_height=176, width=270, height=176, resizable=False)
+    dpg.create_viewport(title=f'squid-{config.VERSION}', min_width=270, min_height=176, width=270, height=176, resizable=False)
     dpg.set_viewport_always_top(True)
     dpg.setup_dearpygui()
     dpg.show_viewport()

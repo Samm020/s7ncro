@@ -11,33 +11,7 @@ class Automation:
         self.mouse = Mouse()
         self.keyboard = Keyboard()
         self.color = ColorDetector(wm)
-
-        # text coords
-        self.text_x = 404
-        self.text_y = 426
-        self.point_col = (255, 255, 1)
-        self.game_col = (253, 48, 145)
-
-        # lobby indicator (menu icon)
-        self.lobby_x = 420
-        self.lobby_y = 535
-        self.lobby_col = (210, 235, 35)
-
-        # home icon coords
-        self.home_x = 404
-        self.home_y = 516
-
-        # rlgl colors
-        self.rlgl_x = 396
-        self.rlgl_y = 128
-        self.rlgl_green = (83, 255, 56)
-        self.rlgl_red = (255, 24, 24)
-        self.rlgl_col = (230, 235, 157)
-
-        # obby color
-        self.obby_x = 790
-        self.obby_y = 590
-        self.obby_col = (83, 154, 195)
+        self.state = 0
 
     def rel(self, x, y):
         """set coordinates relative to target window"""
@@ -51,9 +25,101 @@ class Automation:
         """move mouse cursor relative to target window"""
         screen_x, screen_y = self.rel(x,y)
         self.mouse.move(screen_x,screen_y)
+    
+    def release_keys(self):
+        """release all keys"""
+        self.keyboard.release(self.config.JUMP)
+        self.keyboard.release(self.config.LEFT)
+        self.keyboard.release(self.config.RIGHT)
+        self.keyboard.release(self.config.FORWARD)
+        self.keyboard.release(self.config.BACKWARD)
 
-    # RED LIGHT.... GREEEEEEEN LIIIIIIIGGHHHTTT
+    # check if in lobby
+    def _in_lobby(self):
+        if self.state == 0 and self.color.region_check([self.config.LOBBY_X, self.config.LOBBY_Y, 2], self.config.LOBBY_COL):
+            self.sm.update('status_text', 'in lobby')
+            self.release_keys()
+            self.keyboard.press(self.config.RIGHT)
+
+            # maybe running into wall makes orientation issue?
+            time.sleep(6) 
+            self.wm.activate()
+            self.moverel(400,300)
+            self.mouse.press('r')
+            self.moverel(300,300)
+            self.mouse.release('r')
+
+            # wait until menu icon is gone
+            #while (self.config.RUNNING and self.color.region_check([self.config.LOBBY_X, self.config.LOBBY_Y, 2], self.config.LOBBY_COL)):
+            #    time.sleep(0.1)
+
+            # stop moving when done
+            self.keyboard.release(self.config.RIGHT)
+
+            # set state to prevent further action
+            self.state = 1
+
+    # check the pink game name text
+    def _check_game(self):
+        if self.color.region_check([self.config.RLGL_GAME_X, self.config.RLGL_GAME_Y, 3], self.config.GAME_COL):
+            self.sm.update('status_text', 'rlgl')
+            self.keyboard.release(self.config.RIGHT)
+            self.keyboard.press(self.config.LEFT)
+            self.state = 2
+            time.sleep(9)
+        elif self.color.region_check([self.config.TEXT_X, self.config.TEXT_Y, 3], self.config.GAME_COL):
+            self.sm.update('status_text', 'obby')
+            self.keyboard.press(self.config.RIGHT)
+            self.keyboard.press(self.config.FORWARD)
+            self.state = 3
+            time.sleep(9)
+
+    # check for points earned text
+    def _check_point(self):
+        if self.state == 2 and self.color.region_check([self.config.TEXT_X, self.config.TEXT_Y, 3], self.config.POINT_COL):
+            self.release_keys()
+            self.sm.update('status_text', 'finished')
+            self.moverel(self.config.HOME_X, self.config.HOME_Y)
+            self.mouse.click()
+            self.state = 0
+            time.sleep(9)
+
+    def _check_eliminate(self):
+        if self.color.region_check([self.config.ELIM_X, self.config.ELIM_Y, 3], self.config.ELIM_COL):
+            self.release_keys()
+            self.sm.update('status_text', 'eliminate')
+            self.moverel(self.config.ELIM_X-100, self.config.ELIM_Y-10)
+            self.mouse.click()
+            self.state = 0
+            time.sleep(9)
+
     def rlgl(self):
+        # green light
+        if self.color.region_check([self.config.RLGL_X, self.config.RLGL_Y, 3], self.config.RLGL_GREEN, tolerance=80):
+            self.sm.update('status_text', 'moving')
+            self.keyboard.press(self.config.LEFT)
+
+            # move until color changes
+            while (self.config.RUNNING and self.color.region_check([self.config.RLGL_X, self.config.RLGL_Y, 3], self.config.RLGL_GREEN, tolerance=80)):
+                self._check_point()
+                time.sleep(0.1)
+
+        # red light
+        elif self.color.region_check([self.config.RLGL_X, self.config.RLGL_Y, 3], self.config.RLGL_RED, tolerance=30):
+            self.sm.update('status_text', 'waiting')
+            time.sleep(0.2) # move a bit further for free
+            self.keyboard.release(self.config.LEFT)
+
+            # wait for green
+            while (self.config.RUNNING and self.color.region_check([self.config.RLGL_X, self.config.RLGL_Y, 3], self.config.RLGL_RED, tolerance=30)):
+                self._check_point()
+                time.sleep(0.1)
+
+    def obby(self):
+        pass
+
+    # mini games loop
+    def minigames(self):
 
         # slight delay
         for i in range(3, 0, -1):
@@ -64,94 +130,46 @@ class Automation:
         try:
             while not self.tm.stop_event.is_set() and self.config.RUNNING:
 
-                # check menu icon exist
-                if self.color.region_check([self.lobby_x, self.lobby_y, 2], self.lobby_col):
-                    self.sm.update('status_text', 'in lobby')
-                    self.keyboard.release('a')
-                    self.keyboard.press('d')
+                self._in_lobby()
+                self._check_eliminate()
+                self._check_game()
 
-                    # wait until menu icon is gone
-                    while (self.config.RUNNING and self.color.region_check([self.lobby_x, self.lobby_y, 2], self.lobby_col)):
-                        time.sleep(0.1)
+                # RED LIGHT.... GREEEEEEEN LIIIIIIIGGHHHTTT
+                if self.state == 2:
+                    self.rlgl()
 
-                    # stop moving when done
-                    self.keyboard.release('d')
-
-                # scan for the pink text before the red light green light to get ahead
-                if self.color.region_check([self.text_x, self.text_y, 3], self.game_col):
-
-                    # check if wrong orientation
-                    # soon
-
-                    self.keyboard.release('d')
-                    self.keyboard.press('a')
-                    self.sm.update('status_text', 'line up')
-                    time.sleep(9)
-
-                # green light
-                if self.color.region_check([self.rlgl_x, self.rlgl_y, 3], self.rlgl_green, tolerance=80):
-                    self.sm.update('status_text', 'moving')
-                    self.keyboard.press('a')
-
-                    # move until color changes
-                    while (self.config.RUNNING and self.color.region_check([self.rlgl_x, self.rlgl_y, 3], self.rlgl_green, tolerance=80)):
-
-                        # scan for points text
-                        if self.color.region_check([self.text_x, self.text_y, 3], self.point_col):
-                            self.sm.update('status_text', 'finished')
-                            self.keyboard.release('a')
-                            self.moverel(self.home_x, self.home_y)
-                            self.mouse.click()
-                            time.sleep(5)
-
-                        time.sleep(0.1)
-
-                # red light
-                elif self.color.region_check([self.rlgl_x, self.rlgl_y, 3], self.rlgl_red, tolerance=30):
-                    self.sm.update('status_text', 'waiting')
-                    time.sleep(0.2) # move a bit further for free
-                    self.keyboard.release('a')
-
-                    # wait for green
-                    while (self.config.RUNNING and self.color.region_check([self.rlgl_x, self.rlgl_y, 3], self.rlgl_red, tolerance=30)):
-
-                        # scan for points text
-                        if self.color.region_check([self.text_x, self.text_y, 3], self.point_col):
-                            self.sm.update('status_text', 'finished')
-                            self.moverel(self.home_x, self.home_y)
-                            self.mouse.click()
-                            time.sleep(5)
-
-                        time.sleep(0.1)
+                # THE OBBBYYYYYYYYYYY
+                #elif self.state == 3:
+                #    pass
 
                 self.sm.update('status_text', 'idle')
                 time.sleep(0.1)
 
         # release key if error
         except Exception as e:
+            self.release_keys()
             print(e)
-            self.keyboard.release('d')
-            self.keyboard.release('a')
         finally:
-            self.keyboard.release('d')
-            self.keyboard.release('a')
+            self.release_keys()
             self.sm.update('status_text', 'stopped')
-    
+
     def start(self):
         if not self.config.RUNNING:
             self.config.RUNNING = True
             if not self.wm.wait_target_win():
                 self.sm.update('status_text', 'failed')
-                self.sm.update('status_text_hover', 'could not find target window')
+                self.sm.update('status_text_hover', 'cant find target window, select again')
+                self.config.HWND = None
                 self.config.RUNNING = False
                 return
             self.sm.configure('run_button', label='STOP')
-            self.tm.add_thread('rlgl', self.rlgl)
-            #self.minigames()
+            self.tm.add_thread('minigames', self.minigames)
         else:
             self.stop()
 
     def stop(self):
+        self.release_keys()
         self.config.RUNNING = False
         self.tm.stop_all_threads()
         self.sm.configure('run_button', label='START')
+        self.state = 0
