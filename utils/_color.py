@@ -67,7 +67,7 @@ class ColorDetector:
         target = np.array(target_color, dtype=np.int16)
         return np.all(np.abs(color - target) <= tolerance)
 
-    def region_check(self, color, region, tolerance=10):
+    def region_check(self, region, color, tolerance=10):
         """find first occurrence of color in region (x1, y1, x2, y2)"""
         capture = self.capture_window()
         if capture is None:
