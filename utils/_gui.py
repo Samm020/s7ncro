@@ -39,6 +39,12 @@ def create_gui(automation):
 
             with dpg.tab(label='instructions'):
                 dpg.add_spacer(height=0.5)
-                dpg.add_text('join event world', bullet=True)
-                dpg.add_text('click START button', bullet=True)
-                dpg.add_text('Click the target window when prompted', bullet=True)
+                dpg.add_text('enter event world', bullet=True)
+                dpg.add_text('enter Pet Games', bullet=True)
+                with dpg.group(horizontal=True):
+                    dpg.add_text('click', bullet=True)
+                    dpg.add_text('START')
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("on 'main' tab")
+                    dpg.add_text('button')
+                dpg.add_text('click roblox window and wait', bullet=True)
