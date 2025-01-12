@@ -10,7 +10,7 @@ class Automation:
         self.config = config
         self.mouse = Mouse()
         self.keyboard = Keyboard()
-        self.color_detector = ColorDetector(wm)
+        self.color = ColorDetector(wm)
 
     def rel(self, x, y):
         """set coordinates relative to the target window"""
@@ -19,62 +19,115 @@ class Automation:
             screen_x = rect['left'] + x
             screen_y = rect['top'] + y
         return screen_x, screen_y
+    
+    def moverel(self, x, y):
+        screen_x, screen_y = self.rel(x,y)
+        self.mouse.move(screen_x,screen_y)
 
     # RED LIGHT!.... GREEEEEEEN LIIIIIIIGGHHHTTT
     def red_light_green_light(self):
+        
+        # slight delay
+        for i in range(3, 0, -1):
+            self.sm.update('status_text', f'{i}...')
+            time.sleep(1)
+        self.wm.activate()
 
-        # text coords (they overlap so we just focus a single point)
+        # lobby indicator (hoverboard icon)
+        LOBBY_X = 118
+        LOBBY_Y = 257
+        LOBBY = (255, 144, 23)
+
+        # text (they overlap so we just focus a single point)
         TEXT_X = 396
         TEXT_Y = 128
-
-        # text colors
         GREEN = (83, 255, 56)
         RED = (255, 24, 24)
 
-        # key to press
-        MOVE_KEY = 'a'
+        # the minigame name
+        GAME = (253, 48, 145)
 
-        self.sm.update('status_text', 'starting')
+        # clear (detect points, click home)
+        POINT_X = 404
+        POINT_Y = 426
+        POINT = (255, 255, 1)
+        HOME_X = 404
+        HOME_Y = 516
+
+        # keys
+        RIGHT = 'd'
+        LEFT = 'a'
 
         try:
-            while self.config.RUNNING:
+            while not self.tm.stop_event.is_set() and self.config.RUNNING:
 
-                # get current color of text
-                current_color = self.color_detector.get_pixel(TEXT_X, TEXT_Y)
-                if current_color is None:
-                    continue
+                # if hoverboard, move right
+                if self.color.check(LOBBY_X, LOBBY_Y, LOBBY):
+                    self.sm.update('status_text', 'lobby')
+                    self.keyboard.press(RIGHT)
+
+                    # wait until hoverboard icon is gone
+                    while (self.config.RUNNING and self.color.check(LOBBY_X, LOBBY_Y, LOBBY)):
+                        time.sleep(0.1)
+
+                    # stop moving right when done
+                    self.keyboard.release(RIGHT)
+
+                # scan for the pink text before the red light green light to get ahead
+                if self.color.check(POINT_X, POINT_Y, GAME):
+                    self.keyboard.press(LEFT)
+                    self.sm.update('status_text', 'line up')
+                    time.sleep(6)
 
                 # green light
-                if self.color_detector.check(TEXT_X, TEXT_Y, GREEN, tolerance=50):
+                if self.color.check(TEXT_X, TEXT_Y, GREEN, tolerance=60):
                     self.sm.update('status_text', 'moving')
-                    self.keyboard.press(MOVE_KEY)
+                    self.keyboard.press(LEFT)
 
                     # move until color changes
-                    while (self.config.RUNNING and self.color_detector.check(TEXT_X, TEXT_Y, GREEN, tolerance=30)):
-                        time.sleep(0.1)
+                    while (self.config.RUNNING and self.color.check(TEXT_X, TEXT_Y, GREEN, tolerance=60)):
 
-                    # stop when color changes
-                    self.keyboard.release(MOVE_KEY)
-                    self.sm.update('status_text', 'stopped')
+                        # scan for points text
+                        if self.color.check(POINT_X, POINT_Y, POINT):
+                            self.keyboard.release(LEFT)
+                            self.sm.update('status_text', 'cleared')
+                            self.moverel(HOME_X, HOME_Y)
+                            self.mouse.click()
+                            print('finished during move')
+                            time.sleep(5)
+
+                        time.sleep(0.1)
 
                 # red light
-                elif self.color_detector.check(TEXT_X, TEXT_Y, RED, tolerance=30):
+                elif self.color.check(TEXT_X, TEXT_Y, RED, tolerance=30):
                     self.sm.update('status_text', 'waiting')
-                    self.keyboard.release(MOVE_KEY)
+                    time.sleep(0.2) # move a bit further for free
+                    self.keyboard.release(LEFT)
                     # wait for green
-                    while (self.config.RUNNING and 
-                           self.color_detector.check(TEXT_X, TEXT_Y, RED, tolerance=30)):
+                    while (self.config.RUNNING and self.color.check(TEXT_X, TEXT_Y, RED, tolerance=30)):
+                        
+                        # scan for points text
+                        if self.color.check(POINT_X, POINT_Y, POINT):
+                            self.sm.update('status_text', 'cleared')
+                            self.moverel(HOME_X, HOME_Y)
+                            self.mouse.click()
+                            print('finished after move')
+                            time.sleep(5)
+                        
                         time.sleep(0.1)
 
+                self.sm.update('status_text', 'idle')
                 time.sleep(0.1)
 
         # release key if error
         except Exception as e:
             print(e)
-            self.keyboard.release(MOVE_KEY)
+            self.keyboard.release(RIGHT)
+            self.keyboard.release(LEFT)
         finally:
-            self.keyboard.release(MOVE_KEY)
-            self.sm.update('status_text', 'oh shi')
+            self.keyboard.release(RIGHT)
+            self.keyboard.release(LEFT)
+            self.sm.update('status_text', 'stopped')
 
     def start(self):
         if not self.config.RUNNING:
