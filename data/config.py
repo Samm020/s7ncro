@@ -38,7 +38,7 @@ class Config:
         # rlgl
         self.RLGL_POS = point(393, 126)
         self.RLGL_RED = (255, 24, 24)
-        self.RLGL_GREEN = (83, 255, 56)
+        self.RLGL_GREEN = (83, 250, 58)
 
         # rlgl orientation check
         self.RLGL_ORI_POS1 = point(150, 300)
@@ -51,3 +51,12 @@ class Config:
         # obby color
         self.OBBY_POS = point(790, 590)
         self.OBBY_COL = (83, 154, 195)
+
+        # "Something went wrong. Do you want to try re-joining?" ERROR
+        self.SMTH_ERR_POS = point(360, 410)
+        self.SMTH_ERR_COL = (253, 158, 66)
+
+        # "You were kicked from this experience: [SAVING] Something went wrong. Please rejoin! (Error Code: 267)" ERROR
+        self.SAVE_ERR_POS = point(220, 400)
+        self.SAVE_ERR_COL1 = (57, 59, 61)
+        self.SAVE_ERR_COL2 = (255, 255, 255)
