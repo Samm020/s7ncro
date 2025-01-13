@@ -52,6 +52,19 @@ class Automation:
             return self.config.FORWARD
         elif self.orientation == 3:
             return self.config.BACKWARD
+    
+    # new lobby workaround, just moves in zig zags across the queue zone
+    def _zigzag(self, direction):
+        self.keyboard.press(direction)
+        for _ in range(3):
+            if self.config.RUNNING:
+                self.keyboard.press(self.config.LEFT)
+                time.sleep(0.4)
+                self.keyboard.release(self.config.LEFT)
+                self.keyboard.press(self.config.RIGHT)
+                time.sleep(0.8)
+                self.keyboard.release(self.config.RIGHT)
+        self.keyboard.release(direction)
 
     # check if in lobby
     def _in_lobby(self):
@@ -59,13 +72,12 @@ class Automation:
             self.sm.update('status_text', 'in lobby')
             self.release_keys()
             self.keyboard.press(self.config.RIGHT)
-
-            # it was the camera angle in first lobby that caused the orientation issue
             self.sleep(9)
+            self.keyboard.release(self.config.RIGHT)
 
-            # wait until menu icon is gone
-            #while (self.config.RUNNING and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL)):
-            #    time.sleep(0.1)
+            # new lobby workaround
+            self._zigzag(self.config.FORWARD)
+            self._zigzag(self.config.BACKWARD)
 
             # stop moving when done
             self.keyboard.release(self.config.RIGHT)
@@ -79,10 +91,12 @@ class Automation:
         # if rlgl
         if self.color.region_check([self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
 
-            # fix orientation for all directions
+            # fix orientation for all directions (scans for the position of red start line)
+            self.keyboard.keypress('tab')
             pos1 = [self.config.RLGL_ORI_POS1.x, self.config.RLGL_ORI_POS1.y, 150]
             pos2 = [self.config.RLGL_ORI_POS2.x, self.config.RLGL_ORI_POS2.y, 150]
             color = self.config.RLGL_ORI_COL
+            time.sleep(1)
 
             # normal left orientation
             if self.color.region_check(pos1, color) and not self.color.region_check(pos2, color):
@@ -103,7 +117,7 @@ class Automation:
             self.sm.update('status_text', 'rlgl')
             self.keyboard.press(self._orientation_key())
             self.state = 2
-            self.sleep(9)
+            self.sleep(8)
 
         # if obby
         elif self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
@@ -139,7 +153,7 @@ class Automation:
         if self.color.region_check([self.config.ELIM_POS.x, self.config.ELIM_POS.y, 3], self.config.ELIM_COL):
             self.release_keys()
             self.sm.update('status_text', 'reset')
-            self.moverel(self.config.ELIM_POS.x-140, self.config.ELIM_POS.y-25)
+            self.moverel(self.config.ELIM_POS.x-150, self.config.ELIM_POS.y-25)
             self.mouse.click()
             self.state = 0
             self.sleep(9)
