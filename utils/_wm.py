@@ -30,15 +30,19 @@ class WindowManager:
                                 win32con.SWP_SHOWWINDOW)
             return True
         return False
+    
+    def exist(self) -> bool:
+        """check if the window exists"""
+        return bool(self.config.HWND and win32gui.IsWindow(self.config.HWND))
 
     def activate(self):
         """activate the target window"""
-        if self.config.HWND and win32gui.IsWindow(self.config.HWND):
+        if self.exist():
             win32gui.SetForegroundWindow(self.config.HWND)
 
     def get_rect(self):
         """get target window dimensions"""
-        if self.config.HWND and win32gui.IsWindow(self.config.HWND):
+        if self.exist():
             rect = win32gui.GetClientRect(self.config.HWND)
             point = win32gui.ClientToScreen(self.config.HWND, (0, 0))
             return {
