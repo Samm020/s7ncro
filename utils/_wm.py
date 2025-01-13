@@ -25,12 +25,14 @@ class WindowManager:
             rect = win32gui.GetWindowRect(self.config.HWND)
             x = rect[0]
             y = rect[1]
-            win32gui.SetWindowPos(self.config.HWND, None, x, y, 
-                                self.config.WIDTH, self.config.HEIGHT, 
-                                win32con.SWP_SHOWWINDOW)
+            win32gui.SetWindowPos(
+                self.config.HWND, None, x, y, 
+                self.config.WIDTH, self.config.HEIGHT, 
+                win32con.SWP_SHOWWINDOW
+            )
             return True
         return False
-    
+
     def exist(self) -> bool:
         """check if the window exists"""
         return bool(self.config.HWND and win32gui.IsWindow(self.config.HWND))
