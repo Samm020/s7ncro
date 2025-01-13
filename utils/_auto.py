@@ -1,6 +1,6 @@
 import time
 from ._mk import Mouse, Keyboard
-from ._color import ColorDetector
+from ._color import Color
 
 class Automation:
     def __init__(self, config, sm, tm, wm):
@@ -10,7 +10,7 @@ class Automation:
         self.config = config
         self.mouse = Mouse()
         self.keyboard = Keyboard()
-        self.color = ColorDetector(wm)
+        self.color = Color(wm)
         self.state = 0
         self.orientation = 0
 
@@ -61,7 +61,7 @@ class Automation:
             self.keyboard.press(self.config.RIGHT)
 
             # it was the camera angle in first lobby that caused the orientation issue
-            self.sleep(6)
+            self.sleep(9)
 
             # wait until menu icon is gone
             #while (self.config.RUNNING and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL)):

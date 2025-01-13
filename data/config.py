@@ -28,8 +28,8 @@ class Config:
         self.GAME_COL = (253, 48, 145)
 
         # lobby indicator (menu icon)
-        self.LOBBY_POS = point(420, 535)
-        self.LOBBY_COL = (210, 235, 35)
+        self.LOBBY_POS = point(410, 530)
+        self.LOBBY_COL = (252, 169, 1)
 
         # home icon coords
         self.HOME_POS = point(404, 516)
