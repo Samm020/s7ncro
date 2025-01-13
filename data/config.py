@@ -5,7 +5,7 @@ point = namedtuple('point', ['x', 'y'])
 
 class Config:
     def __init__(self):
-        self.VERSION = 0.5
+        self.VERSION = 0.6
         self.RUNNING = False
         self.HWND = None
         self.WINTITLE = 'Roblox'
