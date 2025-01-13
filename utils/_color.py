@@ -48,7 +48,7 @@ class Color:
             # store result
             self._last_capture = img_np
             self._last_capture_time = current_time
-            
+
             #img = Image.fromarray(img_np)
             #img.save('screenshot.png')
 
@@ -74,7 +74,21 @@ class Color:
         return np.all(np.abs(color - target) <= tolerance)
 
     def region_check(self, region, color, tolerance=10) -> bool:
-        """find first occurrence of color within tolerance in region (x, y, expand) or (x1, y1, x2, y2)"""
+        """
+        find first occurrence of color within tolerance in region
+
+        args:
+            region: the region to search in, accepts:
+            - (x, y, expand): center (x, y) with expansion radius
+            - ((x1, y1), (x2, y2)): top left and bottom right corner coords
+            - (x1, y1, x2, y2): explicit coords of region
+            color: target color as (r, g, b) tuple
+            tolerance: the allowed deviation for each color channel (default 10).
+
+        returns:
+            (int, int): Coordinates of the first matching pixel.
+            false: If no matching pixel is found or if the capture fails.
+        """
         capture = self.capture_window()
         if capture is None:
             return False
@@ -87,9 +101,14 @@ class Color:
             x2 = x + e
             y2 = y + e
 
+        # coords with top left and bottom right corners
+        elif len(region) == 2 and isinstance(region[0], tuple) and isinstance(region[1], tuple):
+            (x1, y1), (x2, y2) = region
+
         # specified region
         elif len(region) == 4:
             x1, y1, x2, y2 = region
+
         else:
             raise ValueError('bad region format, must be (x1, y1, x2, y2) or (x, y, expand)')
         search_area = capture[y1:y2, x1:x2]
