@@ -2,7 +2,7 @@ import time
 import win32gui
 import numpy as np
 import mss
-from ._dpi import DPIScale
+
 from PIL import Image
 
 class ColorDetector:
@@ -26,7 +26,7 @@ class ColorDetector:
             return None
 
         try:
-            # get window dims
+            # get window client dims
             rect = self.wm.get_rect()
             if not rect:
                 return None
@@ -35,10 +35,6 @@ class ColorDetector:
             top = rect['top']
             right = left + rect['width']
             bottom = top + rect['height']
-
-            # addjust for dpi scaling
-            scaling_factor = DPIScale.get_scaling_factor()
-            left, top, right, bottom = DPIScale.adjust_for_scaling([left, top, right, bottom], scaling_factor)
 
             # use new mss instance for each capture because it caused threading issues
             with mss.mss() as cpt:
@@ -78,7 +74,7 @@ class ColorDetector:
         return np.all(np.abs(color - target) <= tolerance)
 
     def region_check(self, region, color, tolerance=10) -> bool:
-        """find first occurrence of color in region (x, y, expand) or (x1, y1, x2, y2)"""
+        """find first occurrence of color within tolerance in region (x, y, expand) or (x1, y1, x2, y2)"""
         capture = self.capture_window()
         if capture is None:
             return False
