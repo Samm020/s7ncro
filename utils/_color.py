@@ -68,11 +68,11 @@ class ColorDetector:
         target = np.array(target_color, dtype=np.int16)
         return np.all(np.abs(color - target) <= tolerance)
 
-    def region_check(self, region, color, tolerance=10):
-        """find first occurrence of color in region (x1, y1, x2, y2)"""
+    def region_check(self, region, color, tolerance=10) -> bool:
+        """find first occurrence of color in region (x, y, expand) or (x1, y1, x2, y2)"""
         capture = self.capture_window()
         if capture is None:
-            return None
+            return False
 
         # coord with expand value
         if len(region) == 3:
@@ -82,11 +82,11 @@ class ColorDetector:
             x2 = x + e
             y2 = y + e
 
-         # full region
+        # specified region
         elif len(region) == 4:
             x1, y1, x2, y2 = region
         else:
-            raise ValueError('bad region format. must be (x1, y1, x2, y2) or (x, y, expand).')
+            raise ValueError('bad region format, must be (x1, y1, x2, y2) or (x, y, expand)')
         search_area = capture[y1:y2, x1:x2]
 
         # convert to int16
@@ -102,4 +102,4 @@ class ColorDetector:
             # return first match, also adjusted for region offset
             return (matches[1][0] + x1, matches[0][0] + y1)
 
-        return None
+        return False
