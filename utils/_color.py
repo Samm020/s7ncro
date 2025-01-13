@@ -41,7 +41,7 @@ class Color:
                 monitor = {'top': top, 'left': left, 'width': right - left, 'height': bottom - top}
                 capture = cpt.grab(monitor)
 
-            # convert the image to a numpy array, reorder BGRA to RGB
+            # convert the image to a numpy array uint8 for memory efficency, reorder BGRA to RGB
             img_np = np.array(capture, dtype=np.uint8)[:, :, :3]
             img_np = img_np[:, :, ::-1]
 
@@ -70,24 +70,25 @@ class Color:
         color = self.get_pixel(x, y)
         if color is None:
             return False
-        target = np.array(target_color, dtype=np.uint8)
+        target = np.array(target_color, dtype=np.int16)
         return np.all(np.abs(color - target) <= tolerance)
 
     def region_check(self, region, color, tolerance=10) -> bool:
         """
         find first occurrence of color within tolerance in region
 
+        ---
         args:
-            region: the region to search in, accepts:
-            - (x, y, expand): center (x, y) with expansion radius
-            - ((x1, y1), (x2, y2)): top left and bottom right corner coords
-            - (x1, y1, x2, y2): explicit coords of region
+            region (list): the region to search in, accepts:
+            (x, y, expand): center (x, y) with expansion radius
+            ((x1, y1), (x2, y2)): top left and bottom right corner coords
+            (x1, y1, x2, y2): explicit coords of region
+
             color: target color as (r, g, b) tuple
-            tolerance: the allowed deviation for each color channel (default 10).
+            tolerance: the allowed deviation for each color channel
 
         returns:
-            (int, int): Coordinates of the first matching pixel.
-            false: If no matching pixel is found or if the capture fails.
+            bool: true if color found, false otherwise
         """
         capture = self.capture_window()
         if capture is None:
@@ -109,21 +110,13 @@ class Color:
         elif len(region) == 4:
             x1, y1, x2, y2 = region
 
-        else:
-            raise ValueError('bad region format, must be (x1, y1, x2, y2) or (x, y, expand)')
-        search_area = capture[y1:y2, x1:x2]
-
-        # convert to uint8
-        color_array = np.array(color, dtype=np.uint8).reshape(1, 1, 3)
+        # convert int16 for searching because uint8 range for tolerance wasnt percise enough...
+        search_area = capture[y1:y2, x1:x2].astype(np.int16)
+        color_array = np.array(color, dtype=np.int16).reshape(1, 1, 3)
 
         # make mask where color matches within tolerance
         color_mask = np.all(np.abs(search_area - color_array) <= tolerance, axis=2)
 
         # find matching coords
         matches = np.where(color_mask)
-        if len(matches[0]) > 0:
-
-            # return first match, also adjusted for region offset
-            return (matches[1][0] + x1, matches[0][0] + y1)
-
-        return False
+        return len(matches[0]) > 0

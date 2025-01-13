@@ -52,7 +52,7 @@ class Automation:
             return self.config.FORWARD
         elif self.orientation == 3:
             return self.config.BACKWARD
-    
+
     # new lobby workaround, just moves in zig zags across the queue zone
     def _zigzag(self, direction):
         self.keyboard.press(direction)
@@ -157,6 +157,12 @@ class Automation:
             self.mouse.click()
             self.state = 0
             self.sleep(9)
+    
+    def _check_save_error(self):
+        pass
+    
+    def _check_smth_error(self):
+        pass
 
     # rlgl automation
     def rlgl(self):
@@ -224,13 +230,15 @@ class Automation:
                 # RED LIGHT.... GREEEEEEEN LIIIIIIIGGHHHTTT
                 if self.state == 2:
                     self.rlgl()
+                    time.sleep(0.1)
 
                 # THE OBBBYYYYYYYYYYY
                 #elif self.state == 3:
                 #    self.obby()
 
-                self.sm.update('status_text', 'idle')
-                time.sleep(0.1)
+                else:
+                    self.sm.update('status_text', 'idle')
+                    time.sleep(1)
 
         # release key if error
         except Exception as e:
@@ -245,7 +253,7 @@ class Automation:
             self.config.RUNNING = True
             if not self.wm.wait_target_win():
                 self.sm.update('status_text', 'failed')
-                self.sm.update('status_text_hover', 'cant find target window, select again')
+                self.sm.update('status_text_hover', 'cant find window, select again')
                 self.config.HWND = None
                 self.config.RUNNING = False
                 return
