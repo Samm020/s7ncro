@@ -2,6 +2,8 @@ import time
 import win32gui
 import numpy as np
 import mss
+from ._dpi import DPIScale
+from PIL import Image
 
 class ColorDetector:
     def __init__(self, wm):
@@ -34,18 +36,25 @@ class ColorDetector:
             right = left + rect['width']
             bottom = top + rect['height']
 
+            # addjust for dpi scaling
+            scaling_factor = DPIScale.get_scaling_factor()
+            left, top, right, bottom = DPIScale.adjust_for_scaling([left, top, right, bottom], scaling_factor)
+
             # use new mss instance for each capture because it caused threading issues
             with mss.mss() as cpt:
                 monitor = {'top': top, 'left': left, 'width': right - left, 'height': bottom - top}
                 capture = cpt.grab(monitor)
 
             # convert the image to a numpy array, reorder BGRA to RGB
-            img_np = np.array(capture, dtype=np.int16)[:, :, :3]
+            img_np = np.array(capture, dtype=np.uint8)[:, :, :3]
             img_np = img_np[:, :, ::-1]
 
             # store result
             self._last_capture = img_np
             self._last_capture_time = current_time
+            
+            img = Image.fromarray(img_np)
+            img.save('screenshot.png')
 
             return self._last_capture
 
@@ -65,7 +74,7 @@ class ColorDetector:
         color = self.get_pixel(x, y)
         if color is None:
             return False
-        target = np.array(target_color, dtype=np.int16)
+        target = np.array(target_color, dtype=np.uint8)
         return np.all(np.abs(color - target) <= tolerance)
 
     def region_check(self, region, color, tolerance=10) -> bool:
@@ -89,8 +98,8 @@ class ColorDetector:
             raise ValueError('bad region format, must be (x1, y1, x2, y2) or (x, y, expand)')
         search_area = capture[y1:y2, x1:x2]
 
-        # convert to int16
-        color_array = np.array(color, dtype=np.int16).reshape(1, 1, 3)
+        # convert to uint8
+        color_array = np.array(color, dtype=np.uint8).reshape(1, 1, 3)
 
         # make mask where color matches within tolerance
         color_mask = np.all(np.abs(search_area - color_array) <= tolerance, axis=2)
