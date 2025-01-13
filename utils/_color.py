@@ -3,9 +3,9 @@ import win32gui
 import numpy as np
 import mss
 
-from PIL import Image
+#from PIL import Image
 
-class ColorDetector:
+class Color:
     def __init__(self, wm):
         self.wm = wm
 
@@ -49,8 +49,8 @@ class ColorDetector:
             self._last_capture = img_np
             self._last_capture_time = current_time
             
-            img = Image.fromarray(img_np)
-            img.save('screenshot.png')
+            #img = Image.fromarray(img_np)
+            #img.save('screenshot.png')
 
             return self._last_capture
 
