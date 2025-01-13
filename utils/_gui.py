@@ -31,7 +31,7 @@ def create_gui(automation):
                             dpg.add_text('status:')
                             dpg.add_text('inactive', color=(100, 149, 238), tag='status_text')
                             with dpg.tooltip(dpg.last_item()):
-                                dpg.add_text('Waiting to start...', tag='status_text_hover')
+                                dpg.add_text('waiting to start...', tag='status_text_hover')
 
                     dpg.add_spacer(width=17)
                     with dpg.group():
