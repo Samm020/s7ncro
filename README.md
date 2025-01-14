@@ -14,7 +14,7 @@
 > [!note]
 > please use any python version between 3.8 and 3.12 as DearPyGui 1.10.1 is not compatible with 3.13 and onwards
 ```bash
-git clone https://github.com/phruut/s7ncro
+git clone https://github.com/Samm020/s7ncro
 ```
 ```bash
 cd s7ncro
