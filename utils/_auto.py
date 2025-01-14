@@ -248,9 +248,14 @@ class Automation:
         try:
             while not self.tm.stop_event.is_set() and self.config.RUNNING:
 
-                self._in_lobby()
-                self._check_eliminate()
+                # check game first
                 self._check_game()
+
+                # then check lobby
+                self._in_lobby()
+
+                # check for eliminated screen
+                self._check_eliminate()
 
                 # RED LIGHT.... GREEEEEEEN LIIIIIIIGGHHHTTT
                 if self.state == 2:
