@@ -90,7 +90,7 @@ class Automation:
             self.state = 1
 
     # check the pink game name text
-    def _check_game(self):
+    def _check_game(self) -> bool:
 
         # if rlgl
         if self.color.region_check([self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
@@ -131,6 +131,7 @@ class Automation:
             self.keyboard.press(self._orientation_key())
             self.state = 2
             self.sleep(8)
+            return True
 
         # if obby
         elif self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
@@ -138,9 +139,12 @@ class Automation:
             # initial pre move right corner
             self.sm.update('status_text', 'obby')
             self.state = 3
+            return True
+
+        return False
 
     # check for points earned text
-    def _check_point(self):
+    def _check_point(self) -> bool:
 
         # after finishing rlgl
         if self.state == 2 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
@@ -148,6 +152,7 @@ class Automation:
             self.sm.update('status_text', 'finished')
             self.state = 4 # none
             self.sleep(5)
+            return True
 
         # after finishing obby
         elif self.state == 3 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
@@ -157,8 +162,10 @@ class Automation:
             self.mouse.click()
             self.state = 0
             self.sleep(5)
-
+            return True
+        
         time.sleep(0.1)
+        return False
 
     # check for eliminiated screen
     def _check_eliminate(self) -> bool:
@@ -168,7 +175,9 @@ class Automation:
             self.moverel(self.config.ELIM_POS.x-150, self.config.ELIM_POS.y-25)
             self.mouse.click()
             self.state = 0
-            self.sleep(9)
+            self.sleep(5)
+            return True
+        return False
 
     def _check_save_error(self):
         pass
@@ -222,8 +231,10 @@ class Automation:
             # play each keystroke
             start_time = time.time()
 
+            completed = True
             for action in self.config.OBBY_JSON['keystrokes']:
                 if not self.config.RUNNING or self._check_eliminate():
+                    completed = False
                     break
 
                 # calculate wait time
@@ -241,12 +252,13 @@ class Automation:
                 else:
                     self.keyboard.release(key)
 
-            time.sleep(0.5)
-            self.sm.update('status_text', 'reset')
-            self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-            self.mouse.click()
-            self.state = 0
-            self.sleep(5)
+            if completed:
+                time.sleep(0.5)
+                self.sm.update('status_text', 'reset')
+                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
+                self.mouse.click()
+                self.state = 0
+                self.sleep(5)
 
         except Exception as e:
             print(f'error in obby: {e}')
