@@ -53,6 +53,10 @@ class Automation:
         elif self.orientation == 3:
             return self.config.BACKWARD
 
+    # fix for obby orientation
+    def _obby_orientation(self):
+        pass
+
     # new lobby workaround, just moves in zig zags across the queue zone
     def _zigzag(self, direction):
         self.keyboard.press(direction)
@@ -114,6 +118,14 @@ class Automation:
             elif not self.color.region_check(pos1, color) and not self.color.region_check(pos2, color):
                 self.orientation = 3
 
+            # just reset it cant find orientation to avoid losing more boost time
+            else:
+                self.sm.update('status_text', 'reset')
+                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
+                self.mouse.click()
+                self.state = 0
+                self.sleep(5)
+
             # initial pre move
             self.sm.update('status_text', 'rlgl')
             self.keyboard.press(self._orientation_key())
@@ -125,13 +137,10 @@ class Automation:
 
             # initial pre move right corner
             self.sm.update('status_text', 'obby')
-            self.keyboard.press(self.config.RIGHT)
-            self.keyboard.press(self.config.FORWARD)
             self.state = 3
-            self.sleep(9)
 
     # check for points earned text
-    def _check_point(self) -> bool:
+    def _check_point(self):
 
         # after finishing rlgl
         if self.state == 2 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
@@ -139,7 +148,6 @@ class Automation:
             self.sm.update('status_text', 'finished')
             self.state = 4 # none
             self.sleep(5)
-            return True
 
         # after finishing obby
         elif self.state == 3 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
@@ -149,12 +157,11 @@ class Automation:
             self.mouse.click()
             self.state = 0
             self.sleep(5)
-            return True
 
         time.sleep(0.1)
 
     # check for eliminiated screen
-    def _check_eliminate(self):
+    def _check_eliminate(self) -> bool:
         if self.color.region_check([self.config.ELIM_POS.x, self.config.ELIM_POS.y, 3], self.config.ELIM_COL):
             self.release_keys()
             self.sm.update('status_text', 'reset')
@@ -196,18 +203,30 @@ class Automation:
     # obby automation
     def obby(self):
         try:
-            # release all keys
-            self.release_keys()
-            time.sleep(0.1)
+            # orientation mappings
+            def translate_key(key):
+                orientation_map = {
+                    0: {'w': 'w', 'a': 'a', 's': 's', 'd': 'd'}, # facing east (default)
+                    1: {'w': 's', 'a': 'd', 's': 'w', 'd': 'a'}, # facing west
+                    2: {'w': 'd', 'a': 'w', 's': 'a', 'd': 's'}, # facing north
+                    3: {'w': 'a', 'a': 's', 's': 'd', 'd': 'w'}, # facing south
+                }
+                return orientation_map[self.orientation].get(key, key)
 
-            # Play each keystroke with exact timing
+            # go into corner
+            self.keyboard.press(translate_key('d'))
+            self.keyboard.press(translate_key('w'))
+            self.sleep(9)
+            self.release_keys()
+
+            # play each keystroke
             start_time = time.time()
 
             for action in self.config.OBBY_JSON['keystrokes']:
-                if not self.config.RUNNING:  # Stop if automation is stopped
+                if not self.config.RUNNING or self._check_eliminate():
                     break
 
-                # Calculate precise wait time
+                # calculate wait time
                 current_time = time.time() - start_time
                 target_time = action['timestamp']
                 wait_time = target_time - current_time
@@ -215,23 +234,22 @@ class Automation:
                 if wait_time > 0:
                     time.sleep(wait_time)
 
-                # Execute the keystroke
+                # execute keystroke
+                key = translate_key(action['key'])
                 if action['type'] == 'keydown':
-                    self.keyboard.press(action['key'])
+                    self.keyboard.press(key)
                 else:
-                    self.keyboard.release(action['key'])
+                    self.keyboard.release(key)
 
-            # After keystrokes finish, go home like in eliminate
             time.sleep(0.5)
-            if not self._check_point():
-                self.sm.update('status_text', 'error')
-                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.mouse.click()
-                self.state = 0
-                self.sleep(5)
+            self.sm.update('status_text', 'reset')
+            self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
+            self.mouse.click()
+            self.state = 0
+            self.sleep(5)
 
         except Exception as e:
-            print(f"Error in obby: {e}")
+            print(f'error in obby: {e}')
             self.release_keys()
 
     # mini games loop
