@@ -40,7 +40,7 @@ class Automation:
 
     def sleep(self, seconds):
         """sleep while checking running state"""
-        for _ in range(seconds):
+        for _ in range(int(seconds)):
             if not self.config.RUNNING:
                 break
             time.sleep(1)
