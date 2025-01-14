@@ -1,6 +1,4 @@
 import time
-import json
-import os
 from ._mk import Mouse, Keyboard
 from ._color import Color
 
