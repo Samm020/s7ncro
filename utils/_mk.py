@@ -180,7 +180,7 @@ class Mouse:
 
     # move the cursor to screen coordinates
     @_handle_exceptions
-    def move(self, x:int, y:int, duration:int = 500, offset:int = 2, smoothing='ease_in_out') -> bool:
+    def move(self, x:int, y:int, duration:int = 500, smoothing='ease_in_out') -> bool:
         """
         move the mouse to x y location on current screen
 
@@ -189,18 +189,9 @@ class Mouse:
             x (int): x coordinate
             y (int): y coordinate
             duration (int): duration it takes to move there (ms)
-            offset (int): amount to offset the final coords by (px)
-            smoothing (str): 'ease_in_out' | 'ease_in' | 'ease_out' | 'linear'
         returns:
             bool: true if press succeeded, false otherwise
         """
-
-        # modify coords with random offset
-        if offset > 0:
-            x += int(random.gauss(0, offset))
-            y += int(random.gauss(0, offset))
-        x = max(0, min(self.screen_width, x))
-        y = max(0, min(self.screen_height, y))
 
         # get current cursor position
         class POINT(Structure):
@@ -211,7 +202,7 @@ class Mouse:
 
         # calculate distance of start and target coordinates, adjust steps
         distance = math.sqrt((x - start_x)**2 + (y - start_y)**2)
-        steps = max(10, int((distance / 10) * (duration / 500)))
+        steps = max(10, min(50, int(distance / 10)))
 
         # generate movement path points
         smoothing = self._validate_smoothing(smoothing)
@@ -231,8 +222,8 @@ class Mouse:
             self.user32.SendInput(1, byref(inp), sizeof(INPUT))
 
             # add small random delay in between each step
-            time.sleep(random.uniform(step_delay * 0.9, step_delay * 1.1))
-
+            time.sleep(random.uniform(step_delay * 0.8, step_delay * 1.2))
+        
         # success
         return True
 
