@@ -63,4 +63,4 @@ class Config:
         self.SAVE_ERR_COL2 = (255, 255, 255)
 
         # automation file location
-        self.OBBY_JSON = os.path.join(script_dir, 'macro87_1736813693.json')
+        self.OBBY_JSON = os.path.join(script_dir, 'auto_obby.json')
