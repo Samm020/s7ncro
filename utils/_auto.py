@@ -208,9 +208,11 @@ class Automation:
                     recording = json.load(f)
             except FileNotFoundError:
                 print(f"Error: Macro file not found at {self.config.OBBY_JSON}")
+                self.sm.update('status_text', 'json err')
                 return
             except json.JSONDecodeError:
                 print(f"Error: Invalid JSON in macro file {self.config.OBBY_JSON}")
+                self.sm.update('status_text', 'json err')
                 return
 
             # Play each keystroke with exact timing
