@@ -1,8 +1,12 @@
+thank you [sam](https://github.com/Samm020/) for creating the automation for obby <3
+
+---
 ### rules when using
 1. keep roblox window focused as if you were actively playing
 2. do not move camera angle, this usually ruins everything
 3. roblox must be in windowed mode, (macro will resize it automatically at the beginning)
 4. roblox must be running at minimum 20fps
+5. have the auto_obby.json in the same directory as the script
 
 ### other info
 - you will NOT be reconnected after a disconnect or the save error
@@ -14,7 +18,7 @@
 > [!note]
 > please use any python version between 3.8 and 3.12 as DearPyGui 1.10.1 is not compatible with 3.13 and onwards
 ```bash
-git clone https://github.com/Samm020/s7ncro
+git clone https://github.com/phruut/s7ncro
 ```
 ```bash
 cd s7ncro
