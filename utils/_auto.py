@@ -26,7 +26,7 @@ class Automation:
         """move mouse cursor relative to target window"""
         screen_x, screen_y = self.rel(x,y)
         self.mouse.move(screen_x,screen_y)
-    
+
     def release_keys(self):
         """release all keys"""
         self.keyboard.release(self.config.JUMP)
@@ -103,19 +103,19 @@ class Automation:
             time.sleep(1)
 
             # normal left orientation
-            if self.color.region_check(pos1, color) and not self.color.region_check(pos2, color):
+            if self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
                 self.orientation = 0
 
             # right orientation
-            elif not self.color.region_check(pos1, color) and self.color.region_check(pos2, color):
+            elif not self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
                 self.orientation = 1
 
             # forward orientation
-            elif self.color.region_check(pos1, color) and self.color.region_check(pos2, color):
+            elif self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
                 self.orientation = 2
 
             # backwards orientation
-            elif not self.color.region_check(pos1, color) and not self.color.region_check(pos2, color):
+            elif not self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
                 self.orientation = 3
 
             # just reset it cant find orientation to avoid losing more boost time
@@ -127,6 +127,7 @@ class Automation:
                 self.sleep(5)
 
             # initial pre move
+            self.wm.activate()
             self.sm.update('status_text', 'rlgl')
             self.keyboard.press(self._orientation_key())
             self.state = 2
@@ -135,8 +136,7 @@ class Automation:
 
         # if obby
         elif self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
-
-            # initial pre move right corner
+            self.wm.activate()
             self.sm.update('status_text', 'obby')
             self.state = 3
             return True
@@ -172,7 +172,7 @@ class Automation:
         if self.color.region_check([self.config.ELIM_POS.x, self.config.ELIM_POS.y, 3], self.config.ELIM_COL):
             self.release_keys()
             self.sm.update('status_text', 'reset')
-            self.moverel(self.config.ELIM_POS.x-150, self.config.ELIM_POS.y-25)
+            self.moverel(self.config.ELIM_POS.x-145, self.config.ELIM_POS.y-25)
             self.mouse.click()
             self.state = 0
             self.sleep(5)
@@ -214,6 +214,8 @@ class Automation:
         try:
             # orientation mappings
             def translate_key(key):
+
+                # this hurt my brain
                 orientation_map = {
                     0: {'w': 'w', 'a': 'a', 's': 's', 'd': 'd'}, # facing east (default)
                     1: {'w': 's', 'a': 'd', 's': 'w', 'd': 'a'}, # facing west
@@ -231,6 +233,7 @@ class Automation:
             # play each keystroke
             start_time = time.time()
 
+            # just to avoid going back to world if eliminated
             completed = True
             for action in self.config.OBBY_JSON['keystrokes']:
                 if not self.config.RUNNING or self._check_eliminate():
