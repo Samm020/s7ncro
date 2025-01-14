@@ -146,7 +146,7 @@ class Automation:
         # after finishing obby
         elif self.state == 3 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
             self.release_keys()
-            self.sm.update('status_text', 'finished')
+            self.sm.update('status_text', 'reset')
             self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
             self.mouse.click()
             self.state = 0
@@ -198,27 +198,14 @@ class Automation:
     # obby automation
     def obby(self):
         try:
-            # Do the initial sequence if we just entered obby state
-            if self.state == 3:
-                self.release_keys()
-
-            # Load and play the recording
-            try:
-                with open(self.config.OBBY_JSON, 'r') as f:
-                    recording = json.load(f)
-            except FileNotFoundError:
-                print(f"Error: Macro file not found at {self.config.OBBY_JSON}")
-                self.sm.update('status_text', 'json err')
-                return
-            except json.JSONDecodeError:
-                print(f"Error: Invalid JSON in macro file {self.config.OBBY_JSON}")
-                self.sm.update('status_text', 'json err')
-                return
+            # release all keys
+            self.release_keys()
+            time.sleep(0.1)
 
             # Play each keystroke with exact timing
             start_time = time.time()
 
-            for action in recording['keystrokes']:
+            for action in self.config.OBBY_JSON['keystrokes']:
                 if not self.config.RUNNING:  # Stop if automation is stopped
                     break
 
@@ -237,6 +224,7 @@ class Automation:
                     self.keyboard.release(action['key'])
 
             # After keystrokes finish, go home like in eliminate
+            time.sleep(0.5)
             if not self._check_point():
                 self.sm.update('status_text', 'error')
                 self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
