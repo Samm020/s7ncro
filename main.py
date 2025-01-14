@@ -1,5 +1,6 @@
 import dearpygui.dearpygui as dpg
 import sys
+import os
 from utils._gui import create_gui
 from utils._sm import StatusManager
 from utils._tm import ThreadManager
@@ -8,7 +9,7 @@ from utils._auto import Automation
 from data.config import Config
 
 if __name__ == '__main__':
-    config = Config()
+    config = Config(os.path.dirname(__file__))
     sm = StatusManager()
     tm = ThreadManager()
     wm = WindowManager(config, sm)
