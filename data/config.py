@@ -1,11 +1,12 @@
+import os
 from collections import namedtuple
 
 # this is so cool
 point = namedtuple('point', ['x', 'y'])
 
 class Config:
-    def __init__(self):
-        self.VERSION = 0.7
+    def __init__(self, script_dir):
+        self.VERSION = 0.8
         self.RUNNING = False
         self.HWND = None
         self.WINTITLE = 'Roblox'
@@ -60,3 +61,6 @@ class Config:
         self.SAVE_ERR_POS = point(220, 400)
         self.SAVE_ERR_COL1 = (57, 59, 61)
         self.SAVE_ERR_COL2 = (255, 255, 255)
+
+        # automation file location
+        self.OBBY_JSON = os.path.join(script_dir, 'macro87_1736813693.json')
