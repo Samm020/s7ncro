@@ -20,6 +20,7 @@ class Automation:
         self.state = 0
         self.orientation = 0
         self.idle_time = 0
+        self.idle_timeout = 360 # 6 minutes
 
     def rel(self, x, y):
         """set coordinates relative to target window"""
@@ -444,7 +445,7 @@ class Automation:
                 # if after joining lobby, and doesnt continue
                 elif self.state == 1:
                     current_time = time.time()
-                    if current_time - self.idle_time >= 360:
+                    if current_time - self.idle_time >= self.idle_timeout:
                         self._move_to_home()
                         self.idle_time = current_time
                     self.sm.update('status_text', 'idle')
