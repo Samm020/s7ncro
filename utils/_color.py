@@ -17,6 +17,8 @@ class Color:
     # roblox had some safety feature that blocked indirectly capturing the window idek man
     def capture_window(self):
         """capture window content as a numpy array for processing."""
+
+        # prevent capturing every single time per callback
         current_time = time.time()
         if current_time - self._last_capture_time < self._capture_cooldown:
             return self._last_capture
