@@ -24,8 +24,8 @@ class Automation:
 
     def moverel(self, x, y):
         """move mouse cursor relative to target window"""
-        screen_x, screen_y = self.rel(x,y)
-        self.mouse.move(screen_x,screen_y)
+        screen_x, screen_y = self.rel(x, y)
+        self.mouse.move(screen_x, screen_y)
 
     def release_keys(self):
         """release all keys"""
@@ -76,7 +76,7 @@ class Automation:
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
                 self.mouse.click()
                 self.sleep(5)
-                self.moverel(138,194)
+                self.moverel(138, 194)
                 self.mouse.click()
                 self.sleep(5)
                 self.keyboard.press(self.config.RIGHT)
@@ -119,9 +119,126 @@ class Automation:
         if self._check_spawn_world():
             return
 
+        if self.state == 0 and self.color.region_check(
+            [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
+            self.sm.update('status_text', 'in lobby')
+            self.release_keys()
+            self.sleep(4)
+            self.keyboard.press(self.config.RIGHT)
+            self.sleep(9)
+            self.keyboard.release(self.config.RIGHT)
+
+            # new lobby workaround
+            self._zigzag(self.config.FORWARD)
+            self._zigzag(self.config.BACKWARD)
+
+            # stop moving when done
+            self.keyboard.release(self.config.RIGHT)
+
+            # set state to prevent further action
+            self.state = 1
+
+    # check the pink game name text
+    def _check_game(self) -> bool:
+
+        # if rlgl
+        if self.color.region_check(
+            [self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
+
+            # fix orientation for all directions (scans for the position of red start line)
+            self.keyboard.keypress('tab')
+            pos1 = [self.config.RLGL_ORI_POS1.x, self.config.RLGL_ORI_POS1.y, 150]
+            pos2 = [self.config.RLGL_ORI_POS2.x, self.config.RLGL_ORI_POS2.y, 150]
+            color = self.config.RLGL_ORI_COL
+            time.sleep(1)
+
+            # normal left orientation
+            if self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
+                self.orientation = 0
+
+            # right orientation
+            elif not self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
+                self.orientation = 1
+
+            # forward orientation
+            elif self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
+                self.orientation = 2
+
+            # backwards orientation
+            elif not self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
+                self.orientation = 3
+
+            # just reset it cant find orientation to avoid losing more boost time
+            else:
+                self.sm.update('status_text', 'reset')
+                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
+                self.mouse.click()
+                self.state = 0
+                self.sleep(5)
+
+            # initial pre move
+            self.wm.activate()
+            self.sm.update('status_text', 'rlgl')
+            self.keyboard.press(self._orientation_key())
+            self.state = 2
+            self.sleep(8)
+            return True
+
+        # if obby
+        elif self.color.region_check(
+            [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
+            self.wm.activate()
+            self.sm.update('status_text', 'obby')
+            self.state = 3
+            return True
+
+        return False
+
+    # check for points earned text
+    def _check_point(self) -> bool:
+        if self.state == 2 and self.color.region_check(
+            [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3],
+            self.config.POINT_COL, tolerance=10):
+            self.release_keys()
+            self.sm.update('status_text', 'finished')
+            self.state = 4
+            self.sleep(5)
+
+            # Wait until we're truly in the lobby before resetting state
+            while not self.color.region_check(
+                [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
+                self.sm.update('status_text', 'waiting for lobby...')
+                time.sleep(1)
+
+            # Reset state and allow next actions
+            self.state = 0
+            return True
+
+        return False
+
+
+    # new lobby workaround, just moves in zig zags across the queue zone
+    def _zigzag(self, direction):
+        self.keyboard.press(direction)
+        for _ in range(3):
+            if self.config.RUNNING:
+                self.keyboard.press(self.config.LEFT)
+                time.sleep(0.4)
+                self.keyboard.release(self.config.LEFT)
+                self.keyboard.press(self.config.RIGHT)
+                time.sleep(0.8)
+                self.keyboard.release(self.config.RIGHT)
+        self.keyboard.release(direction)
+
+    # check if in lobby
+    def _in_lobby(self):
+        if self._check_spawn_world():
+            return
+
         if self.state == 0 and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
                 self.sm.update('status_text', 'in lobby')
                 self.release_keys()
+                self.sleep(4)
                 self.keyboard.press(self.config.RIGHT)
                 self.sleep(9)
                 self.keyboard.release(self.config.RIGHT)
@@ -190,19 +307,47 @@ class Automation:
 
         return False
 
-    # check for points earned text
+    # Check for points earned text and handle state transitions
     def _check_point(self) -> bool:
 
-        # after finishing rlgl
-        if self.state == 2 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL, tolerance=10):
+        # After finishing RLGL
+        if self.state == 2 and self.color.region_check(
+            [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3],
+            self.config.POINT_COL,
+            tolerance=10
+        ):
             self.release_keys()
             self.sm.update('status_text', 'finished')
-            self.state = 4 # none
+            self.state = 4  # Prevent immediate movement
             self.sleep(5)
+
+            # Ensure it cannot enter "In Lobby" immediately
+            self.sm.update('status_text', 'waiting for lobby change...')
+            previous_state = self.color.region_check(
+                [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2],
+                self.config.LOBBY_COL
+            )
+
+            # Wait until the color state changes, confirming lobby reset
+            while True:
+                current_state = self.color.region_check(
+                    [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2],
+                    self.config.LOBBY_COL
+                )
+                if current_state != previous_state:
+                    break
+                time.sleep(1)
+
+            # Go idle instead of moving in the lobby
+            self.sm.update('status_text', 'idle')
+            self.state = 1
             return True
 
-        # after finishing obby
-        elif self.state == 3 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
+        # After finishing Obby
+        elif self.state == 3 and self.color.region_check(
+            [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3],
+            self.config.POINT_COL
+        ):
             self.release_keys()
             self.sm.update('status_text', 'reset')
             self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
@@ -210,9 +355,11 @@ class Automation:
             self.state = 0
             self.sleep(5)
             return True
-        
+
+        # Default check fallback
         time.sleep(0.1)
         return False
+
 
     # check for eliminiated screen
     def _check_eliminate(self) -> bool:
