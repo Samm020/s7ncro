@@ -5,15 +5,19 @@ point = namedtuple('point', ['x', 'y'])
 
 class Config:
     def __init__(self):
-        self.VERSION = '1.1'
-        self.REPO_OWNER = 'phruut'        
-        self.REPO_NAME = 's7ncro'        
+        self.VERSION = '1.2'
+        self.REPO_OWNER = 'phruut'
+        self.REPO_NAME = 's7ncro'
 
         self.RUNNING = False
         self.HWND = None
         self.WINTITLE = 'Roblox'
         self.WIDTH = 800
         self.HEIGHT = 600
+
+        # for lazy people
+        self.STOP_RLGL = False
+        self.STOP_OBBY = False
 
         # keybinds
         self.JUMP = 'space'
@@ -43,9 +47,15 @@ class Config:
         self.RLGL_RED = (255, 24, 24)
         self.RLGL_GREEN = (83, 250, 58)
 
-        # rlgl orientation check
-        self.RLGL_ORI_POS1 = point(150, 300)
-        self.RLGL_ORI_POS2 = point(650, 300)
+        # orientation checks...
+        self.RLGL_ORI_POS_ML = point(280, 240) # middle
+        self.RLGL_ORI_POS_MR = point(520, 240) # expand 40 pixels
+
+        self.RLGL_ORI_POS_LX = point(1, 310) # left and right sides tpo left bottom right
+        self.RLGL_ORI_POS_LY = point(120, 400)
+        self.RLGL_ORI_POS_RX = point(680, 310)
+        self.RLGL_ORI_POS_RY = point(800, 400)
+
         self.RLGL_ORI_COL = (255, 0, 0)
 
         # rlgl game text position (for determining obby or not without ocr)
