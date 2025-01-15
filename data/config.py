@@ -5,7 +5,7 @@ point = namedtuple('point', ['x', 'y'])
 
 class Config:
     def __init__(self):
-        self.VERSION = '0.9.6'
+        self.VERSION = '0.9.7'
         self.RUNNING = False
         self.HWND = None
         self.WINTITLE = 'Roblox'
@@ -60,6 +60,13 @@ class Config:
         self.SAVE_ERR_POS = point(220, 400)
         self.SAVE_ERR_COL1 = (57, 59, 61)
         self.SAVE_ERR_COL2 = (255, 255, 255)
+
+        # New void world specific detection
+        self.SPAWN_WORLD_BLOCK_POS = point(389, 505)
+        self.SPAWN_WORLD_BLOCK_COL = (21, 221, 206)
+
+        # teleport button
+        self.TELEPORT_POS = point(108, 195)
 
         # obby automation
         self.OBBY_JSON = {

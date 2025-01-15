@@ -57,6 +57,50 @@ class Automation:
     def _obby_orientation(self):
         pass
 
+    # Check if you are in spawn world
+    def _check_spawn_world(self):
+        if self.color.check(
+            self.config.SPAWN_WORLD_BLOCK_POS.x,
+            self.config.SPAWN_WORLD_BLOCK_POS.y,
+            self.config.SPAWN_WORLD_BLOCK_COL
+        ):
+            if self.state != 4:
+                self.sm.update('status_text', 'in spawn world')
+                self.release_keys()
+                self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
+                self.mouse.click()
+                self.sleep(5)
+                self.moverel(311, 193)
+                self.mouse.click()
+                self.sleep(5)
+                self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
+                self.mouse.click()
+                self.sleep(5)
+                self.moverel(138,194)
+                self.mouse.click()
+                self.sleep(5)
+                self.keyboard.press(self.config.RIGHT)
+                self.sleep(2)
+                self.keyboard.release(self.config.RIGHT)
+                self.keyboard.press(self.config.FORWARD)
+                self.sleep(2)
+                self.keyboard.release(self.config.FORWARD)
+                self.sleep(3)
+                self.keyboard.press(self.config.FORWARD)
+                self.sleep(2)
+                self.keyboard.release(self.config.FORWARD)
+                self.keyboard.press(self.config.RIGHT)
+                self.sleep(2)
+                self.keyboard.release(self.config.RIGHT)
+                self.keyboard.press(self.config.RIGHT)
+                self.keyboard.press(self.config.JUMP)
+                self.sleep(3)
+                self.state = 4
+            return True
+        elif self.state == 4:
+            self.state = 0
+        return False
+
     # new lobby workaround, just moves in zig zags across the queue zone
     def _zigzag(self, direction):
         self.keyboard.press(direction)
@@ -70,24 +114,27 @@ class Automation:
                 self.keyboard.release(self.config.RIGHT)
         self.keyboard.release(direction)
 
-    # check if in lobbyw
+    # check if in lobby
     def _in_lobby(self):
+        if self._check_spawn_world():
+            return
+
         if self.state == 0 and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
-            self.sm.update('status_text', 'in lobby')
-            self.release_keys()
-            self.keyboard.press(self.config.RIGHT)
-            self.sleep(9)
-            self.keyboard.release(self.config.RIGHT)
+                self.sm.update('status_text', 'in lobby')
+                self.release_keys()
+                self.keyboard.press(self.config.RIGHT)
+                self.sleep(9)
+                self.keyboard.release(self.config.RIGHT)
 
-            # new lobby workaround
-            self._zigzag(self.config.FORWARD)
-            self._zigzag(self.config.BACKWARD)
+                # new lobby workaround
+                self._zigzag(self.config.FORWARD)
+                self._zigzag(self.config.BACKWARD)
 
-            # stop moving when done
-            self.keyboard.release(self.config.RIGHT)
+                # stop moving when done
+                self.keyboard.release(self.config.RIGHT)
 
-            # set state to prevent further action
-            self.state = 1
+                # set state to prevent further action
+                self.state = 1
 
     # check the pink game name text
     def _check_game(self) -> bool:
@@ -147,7 +194,7 @@ class Automation:
     def _check_point(self) -> bool:
 
         # after finishing rlgl
-        if self.state == 2 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL):
+        if self.state == 2 and self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.POINT_COL, tolerance=10):
             self.release_keys()
             self.sm.update('status_text', 'finished')
             self.state = 4 # none
@@ -295,7 +342,6 @@ class Automation:
                 # THE OBBBYYYYYYYYYYY
                 elif self.state == 3:
                     self.obby()
-
                 else:
                     self.sm.update('status_text', 'idle')
                     time.sleep(0.5)
