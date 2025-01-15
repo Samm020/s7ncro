@@ -65,7 +65,7 @@ class Automation:
             self.config.SPAWN_WORLD_BLOCK_COL
         ):
             if self.state != 4:
-                self.sm.update('status_text', 'in spawn world')
+                self.sm.update('status_text', 'in spawn')
                 self.release_keys()
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
                 self.mouse.click()
