@@ -8,6 +8,7 @@ class WindowManager:
         self.sm = sm
 
     def wait_target_win(self) -> bool:
+        """wait for user to click the target window"""
         self.sm.update('status_text', 'select')
         self.sm.update('status_text_hover', 'click the target window')
 
