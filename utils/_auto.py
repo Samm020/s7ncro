@@ -2,6 +2,12 @@ import time
 from ._mk import Mouse, Keyboard
 from ._color import Color
 
+def running_check(func):
+    def wrapper(self, *args, **kwargs):
+        if self.config.RUNNING:
+            return func(self, *args, **kwargs)
+    return wrapper
+
 class Automation:
     def __init__(self, config, sm, tm, wm):
         self.sm = sm
@@ -22,18 +28,31 @@ class Automation:
             screen_y = rect['top'] + y
         return screen_x, screen_y
 
+    @running_check
     def moverel(self, x, y):
         """move mouse cursor relative to target window"""
         screen_x, screen_y = self.rel(x, y)
         self.mouse.move(screen_x, screen_y)
 
+    @running_check
+    def click(self, btn='l', hold=70):
+        self.mouse.click(btn, hold)
+
+    @running_check
+    def keydown(self, key):
+        self.keyboard.press(key)
+
+    @running_check
+    def keyup(self, key):
+        self.keyboard.release(key)
+
     def release_keys(self):
         """release all keys"""
-        self.keyboard.release(self.config.JUMP)
-        self.keyboard.release(self.config.LEFT)
-        self.keyboard.release(self.config.RIGHT)
-        self.keyboard.release(self.config.FORWARD)
-        self.keyboard.release(self.config.BACKWARD)
+        self.keyup(self.config.JUMP)
+        self.keyup(self.config.LEFT)
+        self.keyup(self.config.RIGHT)
+        self.keyup(self.config.FORWARD)
+        self.keyup(self.config.BACKWARD)
 
     def sleep(self, seconds):
         """sleep while checking running state"""
@@ -53,48 +72,56 @@ class Automation:
         elif self.orientation == 3:
             return self.config.BACKWARD
 
-    # fix for obby orientation
-    def _obby_orientation(self):
-        pass
-
+    # chekc if disconencted
+    def _check_disconnected(self):
+        # if white and gray buttons exists, it means its possible to reconnect
+        rec1, col1 = [self.config.RECONNECT_POS.x, self.config.RECONNECT_POS.y, 2], self.config.RECONNECT_COL
+        rec2, col2 = [self.config.LEAVE_POS.x, self.config.LEAVE_POS.y, 2], self.config.LEAVE_COL
+        if self.color.region_check(rec1, col1) and self.color.region_check(rec2, col2):
+            self.sm.update('status_text', 'discon..')
+            self.moverel(self.config.RECONNECT_POS.x+70, self.config.RECONNECT_POS.y+5)
+            self.click()
+            self.sleep(10)
+    
     # Check if you are in spawn world
     def _check_spawn_world(self):
         if self.color.check(
-            self.config.SPAWN_WORLD_BLOCK_POS.x,
-            self.config.SPAWN_WORLD_BLOCK_POS.y,
-            self.config.SPAWN_WORLD_BLOCK_COL
+            self.config.W1_BLOCK_POS.x,
+            self.config.W1_BLOCK_POS.y,
+            self.config.W1_BLOCK_COL
         ):
             if self.state != 4:
                 self.sm.update('status_text', 'in spawn')
                 self.release_keys()
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
-                self.mouse.click()
-                self.sleep(5)
+                self.click()
+                self.sleep(1)
                 self.moverel(310, 200)
-                self.mouse.click()
-                self.sleep(5)
+                self.click()
+                self.sleep(4)
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
-                self.mouse.click()
-                self.sleep(5)
+                self.click()
+                self.sleep(1)
                 self.moverel(25, 195)
-                self.mouse.click()
-                self.sleep(5)
-                self.keyboard.press(self.config.RIGHT)
+                self.click()
+                self.sleep(4)
+                self.keydown(self.config.RIGHT)
                 self.sleep(2)
-                self.keyboard.release(self.config.RIGHT)
-                self.keyboard.press(self.config.FORWARD)
+                self.keyup(self.config.RIGHT)
+                self.keydown(self.config.FORWARD)
                 self.sleep(2)
-                self.keyboard.release(self.config.FORWARD)
+                self.keyup(self.config.FORWARD)
                 self.sleep(3)
-                self.keyboard.press(self.config.FORWARD)
+                self.keydown(self.config.FORWARD)
                 self.sleep(2)
-                self.keyboard.release(self.config.FORWARD)
-                self.keyboard.press(self.config.RIGHT)
+                self.keyup(self.config.FORWARD)
+                self.keydown(self.config.RIGHT)
                 self.sleep(2)
-                self.keyboard.release(self.config.RIGHT)
-                self.keyboard.press(self.config.RIGHT)
-                self.keyboard.press(self.config.JUMP)
+                self.keyup(self.config.RIGHT)
+                self.keydown(self.config.RIGHT)
+                self.keydown(self.config.JUMP)
                 self.sleep(3)
+                self.release_keys()
                 self.state = 4
             return True
         elif self.state == 4:
@@ -103,37 +130,34 @@ class Automation:
 
     # new lobby workaround, just moves in zig zags across the queue zone
     def _zigzag(self, direction):
-        self.keyboard.press(direction)
+        self.keydown(direction)
         for _ in range(3):
             if self.config.RUNNING:
-                self.keyboard.press(self.config.LEFT)
+                self.keydown(self.config.LEFT)
                 time.sleep(0.4)
-                self.keyboard.release(self.config.LEFT)
-                self.keyboard.press(self.config.RIGHT)
+                self.keyup(self.config.LEFT)
+                self.keydown(self.config.RIGHT)
                 time.sleep(0.8)
-                self.keyboard.release(self.config.RIGHT)
-        self.keyboard.release(direction)
+                self.keyup(self.config.RIGHT)
+        self.keyup(direction)
 
     # check if in lobby
     def _in_lobby(self):
-        if self._check_spawn_world():
-            return
-
         if self.state == 0 and self.color.region_check(
             [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
             self.sm.update('status_text', 'in lobby')
             self.release_keys()
-            self.sleep(4)
-            self.keyboard.press(self.config.RIGHT)
+            self.sleep(3)
+            self.keydown(self.config.RIGHT)
             self.sleep(9)
-            self.keyboard.release(self.config.RIGHT)
+            self.keyup(self.config.RIGHT)
 
             # new lobby workaround
             self._zigzag(self.config.FORWARD)
             self._zigzag(self.config.BACKWARD)
 
             # stop moving when done
-            self.keyboard.release(self.config.RIGHT)
+            self.keyup(self.config.RIGHT)
 
             # set state to prevent further action
             self.state = 1
@@ -142,10 +166,11 @@ class Automation:
     def _check_game(self) -> bool:
 
         # if rlgl
-        if self.color.region_check(
-            [self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
+        if self.color.region_check([self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
 
             # fix orientation for all directions (scans for the position of red start line)
+            # expand 150 to cover all visible parts of line in each side when facing east or west
+            # in any case that players can cover up the line
             self.keyboard.keypress('tab')
             pos1 = [self.config.RLGL_ORI_POS1.x, self.config.RLGL_ORI_POS1.y, 150]
             pos2 = [self.config.RLGL_ORI_POS2.x, self.config.RLGL_ORI_POS2.y, 150]
@@ -172,14 +197,14 @@ class Automation:
             else:
                 self.sm.update('status_text', 'reset')
                 self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.mouse.click()
+                self.click()
                 self.state = 0
                 self.sleep(5)
 
             # initial pre move
             self.wm.activate()
             self.sm.update('status_text', 'rlgl')
-            self.keyboard.press(self._orientation_key())
+            self.keydown(self._orientation_key())
             self.state = 2
             self.sleep(8)
             return True
@@ -219,36 +244,33 @@ class Automation:
 
     # new lobby workaround, just moves in zig zags across the queue zone
     def _zigzag(self, direction):
-        self.keyboard.press(direction)
+        self.keydown(direction)
         for _ in range(3):
             if self.config.RUNNING:
-                self.keyboard.press(self.config.LEFT)
+                self.keydown(self.config.LEFT)
                 time.sleep(0.4)
-                self.keyboard.release(self.config.LEFT)
-                self.keyboard.press(self.config.RIGHT)
+                self.keyup(self.config.LEFT)
+                self.keydown(self.config.RIGHT)
                 time.sleep(0.8)
-                self.keyboard.release(self.config.RIGHT)
-        self.keyboard.release(direction)
+                self.keyup(self.config.RIGHT)
+        self.keyup(direction)
 
     # check if in lobby
     def _in_lobby(self):
-        if self._check_spawn_world():
-            return
-
         if self.state == 0 and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
                 self.sm.update('status_text', 'in lobby')
                 self.release_keys()
                 self.sleep(4)
-                self.keyboard.press(self.config.RIGHT)
+                self.keydown(self.config.RIGHT)
                 self.sleep(9)
-                self.keyboard.release(self.config.RIGHT)
+                self.keyup(self.config.RIGHT)
 
                 # new lobby workaround
                 self._zigzag(self.config.FORWARD)
                 self._zigzag(self.config.BACKWARD)
 
                 # stop moving when done
-                self.keyboard.release(self.config.RIGHT)
+                self.keyup(self.config.RIGHT)
 
                 # set state to prevent further action
                 self.state = 1
@@ -286,14 +308,14 @@ class Automation:
             else:
                 self.sm.update('status_text', 'reset')
                 self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.mouse.click()
+                self.click()
                 self.state = 0
                 self.sleep(5)
 
             # initial pre move
             self.wm.activate()
             self.sm.update('status_text', 'rlgl')
-            self.keyboard.press(self._orientation_key())
+            self.keydown(self._orientation_key())
             self.state = 2
             self.sleep(8)
             return True
@@ -351,7 +373,7 @@ class Automation:
             self.release_keys()
             self.sm.update('status_text', 'reset')
             self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-            self.mouse.click()
+            self.click()
             self.state = 0
             self.sleep(5)
             return True
@@ -367,7 +389,7 @@ class Automation:
             self.release_keys()
             self.sm.update('status_text', 'reset')
             self.moverel(self.config.ELIM_POS.x-145, self.config.ELIM_POS.y-25)
-            self.mouse.click()
+            self.click()
             self.state = 0
             self.sleep(5)
             return True
@@ -385,7 +407,7 @@ class Automation:
         # green light
         if self.color.region_check([self.config.RLGL_POS.x, self.config.RLGL_POS.y, 3], self.config.RLGL_GREEN, tolerance=80):
             self.sm.update('status_text', 'moving')
-            self.keyboard.press(self._orientation_key())
+            self.keydown(self._orientation_key())
 
             # move until red
             while (self.config.RUNNING and self.color.region_check([self.config.RLGL_POS.x, self.config.RLGL_POS.y, 3], self.config.RLGL_GREEN, tolerance=80)):
@@ -396,7 +418,7 @@ class Automation:
         elif self.color.region_check([self.config.RLGL_POS.x, self.config.RLGL_POS.y, 3], self.config.RLGL_RED, tolerance=30):
             self.sm.update('status_text', 'waiting')
             time.sleep(0.2) # move a bit further for free
-            self.keyboard.release(self._orientation_key())
+            self.keyup(self._orientation_key())
 
             # stop until green
             while (self.config.RUNNING and self.color.region_check([self.config.RLGL_POS.x, self.config.RLGL_POS.y, 3], self.config.RLGL_RED, tolerance=30)):
@@ -419,8 +441,8 @@ class Automation:
                 return orientation_map[self.orientation].get(key, key)
 
             # go into corner
-            self.keyboard.press(translate_key('d'))
-            self.keyboard.press(translate_key('w'))
+            self.keydown(translate_key('d'))
+            self.keydown(translate_key('w'))
             self.sleep(9)
             self.release_keys()
 
@@ -445,15 +467,15 @@ class Automation:
                 # execute keystroke
                 key = translate_key(action['key'])
                 if action['type'] == 'keydown':
-                    self.keyboard.press(key)
+                    self.keydown(key)
                 else:
-                    self.keyboard.release(key)
+                    self.keyup(key)
 
             if completed:
                 time.sleep(0.5)
                 self.sm.update('status_text', 'reset')
                 self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.mouse.click()
+                self.click()
                 self.state = 0
                 self.sleep(5)
 
@@ -473,10 +495,16 @@ class Automation:
         try:
             while not self.tm.stop_event.is_set() and self.config.RUNNING:
 
+                # check disconnected
+                self._check_disconnected()
+
+                # check if spawn world
+                self._check_spawn_world()
+
                 # check game first
                 self._check_game()
 
-                # then check lobby
+                # check if lobby
                 self._in_lobby()
 
                 # check for eliminated screen
