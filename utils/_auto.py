@@ -19,6 +19,7 @@ class Automation:
         self.color = Color(wm)
         self.state = 0
         self.orientation = 0
+        self.idle_time = 0
 
     def rel(self, x, y):
         """set coordinates relative to target window"""
@@ -76,6 +77,19 @@ class Automation:
         elif self.orientation == 3:
             return self.config.BACKWARD
 
+    # state change
+    def set_state(self, state):
+        self.state = state
+        self.idle_time = time.time()
+
+    # move to home
+    def _move_to_home(self):
+        self.sm.update('status_text', 'reset')
+        self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
+        self.click()
+        self.set_state(0)
+        self.sleep(5)
+
     # chekc if disconencted
     def _check_disconnected(self):
         # if white and gray buttons exists, it means its possible to reconnect
@@ -85,6 +99,7 @@ class Automation:
             self.sm.update('status_text', 'discon..')
             self.moverel(self.config.RECONNECT_POS.x+70, self.config.RECONNECT_POS.y+5)
             self.click()
+            self.set_state(0)
             self.sleep(10)
 
     # Check if you are in spawn world
@@ -134,10 +149,10 @@ class Automation:
                 self.keydown(self.config.JUMP)
                 self.sleep(3)
                 self.release_keys()
-                self.state = 4
+                self.set_state(4)
             return True
         elif self.state == 4:
-            self.state = 0
+            self.set_state(0)
         return False
 
     # check if in lobby
@@ -170,7 +185,7 @@ class Automation:
             self.keyup(self.config.RIGHT)
 
             # set state to prevent further action
-            self.state = 1
+            self.set_state(1)
 
     # check the pink game name text
     def _check_game(self) -> bool:
@@ -213,17 +228,13 @@ class Automation:
 
             # just reset it cant find orientation to avoid losing more boost time
             else:
-                self.sm.update('status_text', 'reset')
-                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.click()
-                self.state = 0
-                self.sleep(5)
+                self._move_to_home()
 
             # initial pre move
             self.wm.activate()
             self.sm.update('status_text', 'rlgl')
             self.keydown(self._orientation_key())
-            self.state = 2
+            self.set_state(2)
             self.sleep(9)
             return True
 
@@ -232,7 +243,7 @@ class Automation:
             [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
             self.wm.activate()
             self.sm.update('status_text', 'obby')
-            self.state = 3
+            self.set_state(3)
             return True
 
         return False
@@ -251,7 +262,7 @@ class Automation:
                 return
             self.release_keys()
             self.sm.update('status_text', 'finished')
-            self.state = 4  # Prevent immediate movement
+            self.set_state(4) # Prevent immediate movement
             self.sleep(5)
 
             # Ensure it cannot enter "In Lobby" immediately
@@ -273,7 +284,7 @@ class Automation:
 
             # Go idle instead of moving in the lobby
             self.sm.update('status_text', 'idle')
-            self.state = 1
+            self.set_state(1)
             return True
 
         # After finishing Obby
@@ -282,11 +293,7 @@ class Automation:
             self.config.POINT_COL
         ):
             self.release_keys()
-            self.sm.update('status_text', 'reset')
-            self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-            self.click()
-            self.state = 0
-            self.sleep(5)
+            self._move_to_home()
             return True
 
         # Default check fallback
@@ -300,7 +307,7 @@ class Automation:
             self.sm.update('status_text', 'reset')
             self.moverel(self.config.ELIM_POS.x-145, self.config.ELIM_POS.y-25)
             self.click()
-            self.state = 0
+            self.set_state(0)
             self.sleep(5)
             return True
         return False
@@ -392,11 +399,7 @@ class Automation:
                     self.stop()
                     return
                 time.sleep(0.5)
-                self.sm.update('status_text', 'reset')
-                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.click()
-                self.state = 0
-                self.sleep(5)
+                self._move_to_home()
 
         except Exception as e:
             print(f'error in obby: {e}')
@@ -438,7 +441,16 @@ class Automation:
                 elif self.state == 3:
                     self.obby()
 
-                # nothing
+                # if after joining lobby, and doesnt continue
+                elif self.state == 1:
+                    current_time = time.time()
+                    if current_time - self.idle_time >= 360:
+                        self._move_to_home()
+                        self.idle_time = current_time
+                    self.sm.update('status_text', 'idle')
+                    time.sleep(0.5)
+
+                # none
                 else:
                     self.sm.update('status_text', 'idle')
                     time.sleep(0.5)
@@ -466,8 +478,8 @@ class Automation:
 
     def stop(self):
         self.release_keys()
+        self.set_state(0)
         self.config.RUNNING = False
-        self.state = 0
         self.tm.stop_all_threads()
         self.sm.configure('run_button', label='START')
         self.sm.update('status_text', 'inactive')
