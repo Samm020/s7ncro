@@ -68,7 +68,7 @@ def create_gui(automation, config, update):
                         dpg.configure_item('download_update_button', show=True)
                         dpg.set_item_user_data('download_update_button', result['download_url'])
                     else:
-                        dpg.configure_item('update_status', default_value='you are running the latest version.', color=(100, 149, 238))
+                        dpg.configure_item('update_status', default_value='you are running the latest version', color=(100, 149, 238))
 
                 def download_update_callback():
                     dpg.configure_item('update_status', default_value='downloading update...', color=(100, 149, 238))
