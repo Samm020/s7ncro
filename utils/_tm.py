@@ -51,9 +51,12 @@ class ThreadManager:
 
     def stop_all_threads(self):
         """stop all active threads"""
+        current_thread = threading.current_thread()
         with self.thread_lock:
             self.stop_event.set()
-            for thread in self.active_threads.values():
+            for name, thread in list(self.active_threads.items()):
+                if thread is current_thread:
+                    continue
                 thread.join(timeout=1.0)
             self.active_threads.clear()
             self.stop_event.clear()
