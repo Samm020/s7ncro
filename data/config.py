@@ -5,7 +5,10 @@ point = namedtuple('point', ['x', 'y'])
 
 class Config:
     def __init__(self):
-        self.VERSION = '1.0'
+        self.VERSION = '1.1'
+        self.REPO_OWNER = 'phruut'        
+        self.REPO_NAME = 's7ncro'        
+
         self.RUNNING = False
         self.HWND = None
         self.WINTITLE = 'Roblox'
@@ -62,11 +65,17 @@ class Config:
         self.SAVE_ERR_COL2 = (255, 255, 255)
 
         # New spawn world specific detection
-        self.SPAWN_WORLD_BLOCK_POS = point(389, 505)
-        self.SPAWN_WORLD_BLOCK_COL = (21, 221, 206)
+        self.W1_BLOCK_POS = point(389, 505)
+        self.W1_BLOCK_COL = (21, 221, 206)
 
         # teleport button
-        self.TELEPORT_POS = point(108, 195)
+        self.TELEPORT_POS = point(108, 190)
+
+        # reconnect
+        self.RECONNECT_POS = point(420, 380)
+        self.RECONNECT_COL = (255, 255, 255)
+        self.LEAVE_POS = point(360, 380)
+        self.LEAVE_COL = (57, 59, 61)
 
         # obby automation
         self.OBBY_JSON = {
