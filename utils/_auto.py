@@ -351,13 +351,13 @@ class Automation:
                 return orientation_map[self.orientation].get(key, key)
 
             # go into corner
-            self.keydown(translate_key('w'))
-            self.sleep(4)
-            self.keyup(translate_key('w'))
             self.keydown(translate_key('d'))
             self.sleep(4)
             self.keyup(translate_key('d'))
             self.keydown(translate_key('w'))
+            self.sleep(4)
+            self.keyup(translate_key('w'))
+            self.keydown(translate_key('d'))
             self.sleep(1)
             self.release_keys()
 
