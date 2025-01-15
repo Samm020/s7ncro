@@ -46,6 +46,10 @@ class Automation:
     def keyup(self, key):
         self.keyboard.release(key)
 
+    @running_check
+    def keypress(self, key):
+        self.keyboard.keypress(key)
+
     def release_keys(self):
         """release all keys"""
         self.keyup(self.config.JUMP)
@@ -82,7 +86,7 @@ class Automation:
             self.moverel(self.config.RECONNECT_POS.x+70, self.config.RECONNECT_POS.y+5)
             self.click()
             self.sleep(10)
-    
+
     # Check if you are in spawn world
     def _check_spawn_world(self):
         if self.color.check(
@@ -93,28 +97,36 @@ class Automation:
             if self.state != 4:
                 self.sm.update('status_text', 'in spawn')
                 self.release_keys()
+                # click tp
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
                 self.click()
                 self.sleep(1)
+                # area 2
                 self.moverel(310, 200)
                 self.click()
                 self.sleep(4)
+                # click tp
                 self.moverel(self.config.TELEPORT_POS.x, self.config.TELEPORT_POS.y)
                 self.click()
                 self.sleep(1)
+                # spawn
                 self.moverel(25, 195)
                 self.click()
                 self.sleep(4)
+                # move right
                 self.keydown(self.config.RIGHT)
                 self.sleep(2)
                 self.keyup(self.config.RIGHT)
+                # forward to enter event
                 self.keydown(self.config.FORWARD)
                 self.sleep(2)
                 self.keyup(self.config.FORWARD)
                 self.sleep(3)
+                # move to enterance distance
                 self.keydown(self.config.FORWARD)
                 self.sleep(2)
                 self.keyup(self.config.FORWARD)
+                # move into portal
                 self.keydown(self.config.RIGHT)
                 self.sleep(2)
                 self.keyup(self.config.RIGHT)
@@ -128,21 +140,8 @@ class Automation:
             self.state = 0
         return False
 
-    # new lobby workaround, just moves in zig zags across the queue zone
-    def _zigzag(self, direction):
-        self.keydown(direction)
-        for _ in range(3):
-            if self.config.RUNNING:
-                self.keydown(self.config.LEFT)
-                time.sleep(0.4)
-                self.keyup(self.config.LEFT)
-                self.keydown(self.config.RIGHT)
-                time.sleep(0.8)
-                self.keyup(self.config.RIGHT)
-        self.keyup(direction)
-
     # check if in lobby
-    def _in_lobby(self):
+    def _check_lobby(self):
         if self.state == 0 and self.color.region_check(
             [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
             self.sm.update('status_text', 'in lobby')
@@ -152,9 +151,20 @@ class Automation:
             self.sleep(9)
             self.keyup(self.config.RIGHT)
 
-            # new lobby workaround
-            self._zigzag(self.config.FORWARD)
-            self._zigzag(self.config.BACKWARD)
+            # new lobby workaround, just moves in zig zags across the queue zone
+            def _zigzag(direction):
+                self.keydown(direction)
+                for _ in range(3):
+                    if self.config.RUNNING:
+                        self.keydown(self.config.LEFT)
+                        time.sleep(0.4)
+                        self.keyup(self.config.LEFT)
+                        self.keydown(self.config.RIGHT)
+                        time.sleep(0.8)
+                        self.keyup(self.config.RIGHT)
+                self.keyup(direction)
+            _zigzag(self.config.FORWARD)
+            _zigzag(self.config.BACKWARD)
 
             # stop moving when done
             self.keyup(self.config.RIGHT)
@@ -169,28 +179,36 @@ class Automation:
         if self.color.region_check([self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
 
             # fix orientation for all directions (scans for the position of red start line)
-            # expand 150 to cover all visible parts of line in each side when facing east or west
-            # in any case that players can cover up the line
-            self.keyboard.keypress('tab')
-            pos1 = [self.config.RLGL_ORI_POS1.x, self.config.RLGL_ORI_POS1.y, 150]
-            pos2 = [self.config.RLGL_ORI_POS2.x, self.config.RLGL_ORI_POS2.y, 150]
+            # big area so if players cover up the line some parts are still visible
+            s_left = (self.config.RLGL_ORI_POS_LX, self.config.RLGL_ORI_POS_LY)
+            s_right = (self.config.RLGL_ORI_POS_RX, self.config.RLGL_ORI_POS_RY)
+            m_left = [self.config.RLGL_ORI_POS_ML.x, self.config.RLGL_ORI_POS_ML.y, 40]
+            m_right = [self.config.RLGL_ORI_POS_MR.x, self.config.RLGL_ORI_POS_MR.y, 40]
             color = self.config.RLGL_ORI_COL
-            time.sleep(1)
+
+            # holy moly checks
+            # if macro is still moving to the wrong direction then idk wtf you did wrong
+            def check_left():
+                return self.color.region_check(s_left, color, 0) or self.color.region_check(m_left, color, 0)
+            def check_right():
+                return self.color.region_check(s_right, color, 0) or self.color.region_check(m_right, color, 0)
+            left = check_left()
+            right = check_right()
 
             # normal left orientation
-            if self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
+            if left and not right:
                 self.orientation = 0
 
             # right orientation
-            elif not self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
+            elif not left and right:
                 self.orientation = 1
 
             # forward orientation
-            elif self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
+            elif left and right:
                 self.orientation = 2
 
             # backwards orientation
-            elif not self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
+            elif not left and not right:
                 self.orientation = 3
 
             # just reset it cant find orientation to avoid losing more boost time
@@ -206,122 +224,12 @@ class Automation:
             self.sm.update('status_text', 'rlgl')
             self.keydown(self._orientation_key())
             self.state = 2
-            self.sleep(8)
+            self.sleep(9)
             return True
 
         # if obby
         elif self.color.region_check(
             [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
-            self.wm.activate()
-            self.sm.update('status_text', 'obby')
-            self.state = 3
-            return True
-
-        return False
-
-    # check for points earned text
-    def _check_point(self) -> bool:
-        if self.state == 2 and self.color.region_check(
-            [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3],
-            self.config.POINT_COL, tolerance=10):
-            self.release_keys()
-            self.sm.update('status_text', 'finished')
-            self.state = 4
-            self.sleep(5)
-
-            # Wait until we're truly in the lobby before resetting state
-            while not self.color.region_check(
-                [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
-                self.sm.update('status_text', 'waiting for lobby...')
-                time.sleep(1)
-
-            # Reset state and allow next actions
-            self.state = 0
-            return True
-
-        return False
-
-
-    # new lobby workaround, just moves in zig zags across the queue zone
-    def _zigzag(self, direction):
-        self.keydown(direction)
-        for _ in range(3):
-            if self.config.RUNNING:
-                self.keydown(self.config.LEFT)
-                time.sleep(0.4)
-                self.keyup(self.config.LEFT)
-                self.keydown(self.config.RIGHT)
-                time.sleep(0.8)
-                self.keyup(self.config.RIGHT)
-        self.keyup(direction)
-
-    # check if in lobby
-    def _in_lobby(self):
-        if self.state == 0 and self.color.region_check([self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2], self.config.LOBBY_COL):
-                self.sm.update('status_text', 'in lobby')
-                self.release_keys()
-                self.sleep(4)
-                self.keydown(self.config.RIGHT)
-                self.sleep(9)
-                self.keyup(self.config.RIGHT)
-
-                # new lobby workaround
-                self._zigzag(self.config.FORWARD)
-                self._zigzag(self.config.BACKWARD)
-
-                # stop moving when done
-                self.keyup(self.config.RIGHT)
-
-                # set state to prevent further action
-                self.state = 1
-
-    # check the pink game name text
-    def _check_game(self) -> bool:
-
-        # if rlgl
-        if self.color.region_check([self.config.RLGL_GAME_POS.x, self.config.RLGL_GAME_POS.y, 3], self.config.GAME_COL):
-
-            # fix orientation for all directions (scans for the position of red start line)
-            self.keyboard.keypress('tab')
-            pos1 = [self.config.RLGL_ORI_POS1.x, self.config.RLGL_ORI_POS1.y, 150]
-            pos2 = [self.config.RLGL_ORI_POS2.x, self.config.RLGL_ORI_POS2.y, 150]
-            color = self.config.RLGL_ORI_COL
-            time.sleep(1)
-
-            # normal left orientation
-            if self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
-                self.orientation = 0
-
-            # right orientation
-            elif not self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
-                self.orientation = 1
-
-            # forward orientation
-            elif self.color.region_check(pos1, color, 0) and self.color.region_check(pos2, color, 0):
-                self.orientation = 2
-
-            # backwards orientation
-            elif not self.color.region_check(pos1, color, 0) and not self.color.region_check(pos2, color, 0):
-                self.orientation = 3
-
-            # just reset it cant find orientation to avoid losing more boost time
-            else:
-                self.sm.update('status_text', 'reset')
-                self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
-                self.click()
-                self.state = 0
-                self.sleep(5)
-
-            # initial pre move
-            self.wm.activate()
-            self.sm.update('status_text', 'rlgl')
-            self.keydown(self._orientation_key())
-            self.state = 2
-            self.sleep(8)
-            return True
-
-        # if obby
-        elif self.color.region_check([self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3], self.config.GAME_COL):
             self.wm.activate()
             self.sm.update('status_text', 'obby')
             self.state = 3
@@ -335,16 +243,19 @@ class Automation:
         # After finishing RLGL
         if self.state == 2 and self.color.region_check(
             [self.config.TEXT_POS.x, self.config.TEXT_POS.y, 3],
-            self.config.POINT_COL,
-            tolerance=10
+            self.config.POINT_COL
         ):
+            # the lazy people checks
+            if self.config.STOP_RLGL:
+                self.stop()
+                return
             self.release_keys()
             self.sm.update('status_text', 'finished')
             self.state = 4  # Prevent immediate movement
             self.sleep(5)
 
             # Ensure it cannot enter "In Lobby" immediately
-            self.sm.update('status_text', 'waiting for lobby change...')
+            self.sm.update('status_text', 'wait lob')
             previous_state = self.color.region_check(
                 [self.config.LOBBY_POS.x, self.config.LOBBY_POS.y, 2],
                 self.config.LOBBY_COL
@@ -381,7 +292,6 @@ class Automation:
         # Default check fallback
         time.sleep(0.1)
         return False
-
 
     # check for eliminiated screen
     def _check_eliminate(self) -> bool:
@@ -441,9 +351,14 @@ class Automation:
                 return orientation_map[self.orientation].get(key, key)
 
             # go into corner
-            self.keydown(translate_key('d'))
             self.keydown(translate_key('w'))
-            self.sleep(9)
+            self.sleep(4)
+            self.keyup(translate_key('w'))
+            self.keydown(translate_key('d'))
+            self.sleep(4)
+            self.keyup(translate_key('d'))
+            self.keydown(translate_key('w'))
+            self.sleep(1)
             self.release_keys()
 
             # play each keystroke
@@ -472,6 +387,10 @@ class Automation:
                     self.keyup(key)
 
             if completed:
+                # the lazy people check
+                if self.config.STOP_OBBY:
+                    self.stop()
+                    return
                 time.sleep(0.5)
                 self.sm.update('status_text', 'reset')
                 self.moverel(self.config.HOME_POS.x, self.config.HOME_POS.y)
@@ -488,8 +407,9 @@ class Automation:
 
         # slight delay
         for i in range(3, 0, -1):
-            self.sm.update('status_text', f'{i}...')
-            time.sleep(1)
+            if self.config.RUNNING:
+                self.sm.update('status_text', f'{i}...')
+                time.sleep(1)
         self.wm.activate()
 
         try:
@@ -505,7 +425,7 @@ class Automation:
                 self._check_game()
 
                 # check if lobby
-                self._in_lobby()
+                self._check_lobby()
 
                 # check for eliminated screen
                 self._check_eliminate()
@@ -517,6 +437,8 @@ class Automation:
                 # THE OBBBYYYYYYYYYYY
                 elif self.state == 3:
                     self.obby()
+
+                # nothing
                 else:
                     self.sm.update('status_text', 'idle')
                     time.sleep(0.5)
@@ -527,7 +449,6 @@ class Automation:
             print(e)
         finally:
             self.release_keys()
-            self.sm.update('status_text', 'stopped')
 
     def start(self):
         if not self.config.RUNNING:
@@ -546,7 +467,7 @@ class Automation:
     def stop(self):
         self.release_keys()
         self.config.RUNNING = False
-        self.tm.stop_all_threads()
         self.state = 0
+        self.tm.stop_all_threads()
         self.sm.configure('run_button', label='START')
         self.sm.update('status_text', 'inactive')
