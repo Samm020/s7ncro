@@ -5,7 +5,7 @@ point = namedtuple('point', ['x', 'y'])
 
 class Config:
     def __init__(self):
-        self.VERSION = '1.2'
+        self.VERSION = '1.3'
         self.REPO_OWNER = 'phruut'
         self.REPO_NAME = 's7ncro'
 
