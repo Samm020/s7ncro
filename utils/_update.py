@@ -68,7 +68,7 @@ class AutoUpdate:
         rd /s /q "{os.path.dirname(temp_path)}"
 
         REM delete this batch file and exit, also avoids that batch file not found error :3
-        (goto) 2>nul & del "%~f0"
+        (goto) 2>nul & del "%~f0" & exit
         exit
         '''.strip()
 
