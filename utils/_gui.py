@@ -2,6 +2,12 @@ import dearpygui.dearpygui as dpg
 
 def create_gui(automation, config, update):
     dpg.create_context()
+    
+    def stop_rlgl_callback():
+        config.STOP_RLGL = dpg.get_value('stop_rlgl')
+    
+    def stop_obby_callback():
+        config.STOP_OBBY = dpg.get_value('stop_obby')
 
     def aot_callback():
         dpg.set_viewport_always_top(dpg.get_value('always_on_top'))
@@ -12,19 +18,18 @@ def create_gui(automation, config, update):
                 dpg.add_spacer(height=0.5)
                 with dpg.group(horizontal=True):
                     with dpg.group():
-                        dpg.add_checkbox(label='anti-afk', tag='anti_afk', default_value=False, enabled=False)
-                        with dpg.tooltip(dpg.last_item()):
-                            dpg.add_text('disabled for this war')
-
                         dpg.add_checkbox(label='always on top', tag='always_on_top', 
                                        default_value=True, callback=aot_callback)
                         with dpg.tooltip(dpg.last_item()):
                             dpg.add_text('keep this window on top')
 
-                        #dpg.add_checkbox(label='disable rmb', tag='disable_rmb', default_value=True, callback=rmb_callback)
-                        #with dpg.tooltip(dpg.last_item()):
-                        #    dpg.add_text('no right click to avoid accidentally moving the camera angle', wrap=240)
-                        dpg.add_text('...')
+                        # the lazy people checkboxes
+                        dpg.add_checkbox(label='stop on rlgl', tag='stop_rlgl', callback=stop_rlgl_callback)
+                        with dpg.tooltip(dpg.last_item()):
+                            dpg.add_text('automates up to rlgl, click start when new game to use again', wrap=200)
+                        dpg.add_checkbox(label='stop on obby', tag='stop_obby', callback=stop_obby_callback)
+                        with dpg.tooltip(dpg.last_item()):
+                            dpg.add_text('automates up to obby, click start when new game to use again', wrap=200)
 
                         dpg.add_spacer(height=2)
                         with dpg.group(horizontal=True):
@@ -48,16 +53,6 @@ def create_gui(automation, config, update):
                         dpg.add_text("on 'main' tab")
                     dpg.add_text('button')
                 dpg.add_text('click roblox window and wait', bullet=True)
-
-            with dpg.tab(label='options'):
-                dpg.add_spacer(height=0.5)
-                dpg.add_checkbox(label='stop after rlgl', tag='option_rlgl', enabled=False)
-                with dpg.tooltip(dpg.last_item()):
-                    dpg.add_text('automates up to rlgl, does not do obby', wrap=200)
-                dpg.add_checkbox(label='stop after obby', tag='option_obby', enabled=False)
-                with dpg.tooltip(dpg.last_item()):
-                    dpg.add_text('automates up to obby')
-                dpg.add_text('these options are not finished. for now just manually press start, wait for rlgl (and or obby) to finish, stop the macro and then play manually from glass... you lazy bum', wrap=240)
 
             with dpg.tab(label='update'):
                 dpg.add_spacer(height=0.5)
