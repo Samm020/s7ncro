@@ -294,7 +294,11 @@ class Automation:
             self.config.POINT_COL
         ):
             self.release_keys()
-            self._move_to_home()
+            # Check if we should stop after obby
+            if self.config.STOP_OBBY:
+                self.stop()
+            else:
+                self._move_to_home()
             return True
 
         # Default check fallback
